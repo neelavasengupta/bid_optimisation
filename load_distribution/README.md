@@ -12,20 +12,6 @@ MILP-based load distribution optimizer for paper mill operations. Integrates wit
 - Grid stability constraints (ramp rates)
 - Environmental compliance (wastewater frequency)
 
-## Architecture
-
-```
-User Input (location, timestamp, constraints)
-    ↓
-Price Prediction Engine (Component 1)
-    ↓
-Price Forecasts (48 periods for 24 hours)
-    ↓
-Load Distribution Optimizer (Component 2)
-    ↓
-Optimized Equipment Schedule + Savings
-```
-
 ## Installation
 
 ```bash
@@ -43,7 +29,8 @@ Basic optimization with integrated price forecasting:
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --forecast-start "2024-04-01 00:00" \
+  --date 2024-03-20 \
+  --time 06:00 \
   --forecast-horizon 24
 ```
 
@@ -53,195 +40,205 @@ The system will:
 3. Optimize equipment schedule to minimize electricity costs
 4. Display savings and detailed schedule
 
-## Configurable Parameters
+**Result**: ~10% cost savings ($14,222 saved on $140,119 baseline)
 
-The optimizer supports extensive configuration to demonstrate how different constraints affect optimization results:
+---
+
+## Command-Line Options
+
+### Required
+- `--location` - Location ID (e.g., HAY2201, BEN2201, OTA2201)
+
+### Forecasting
+- `--date` - Start date (YYYY-MM-DD), default: 2024-03-07
+- `--time` - Start time (HH:MM), default: 00:00
+- `--forecast-horizon` - Hours to forecast (1-168), default: 48
+
+### Current State
+- `--current-inventory` - Current inventory level (hours), default: 5.0
+- `--current-load` - Current load (MW), default: 22.8
 
 ### Production Constraints
-- `--production-target`: Daily production target (tons) - affects minimum pulper speed
-- `--allow-pulper-60`: Enable 60% pulper speed (conservation mode)
-- `--allow-pulper-120`: Enable 120% pulper speed (high production mode)
-
-### Storage Constraints
-- `--min-inventory`: Minimum inventory level (hours) - safety buffer
-- `--max-inventory`: Maximum inventory level (hours) - tank capacity
-
-### Equipment Constraints
-- `--min-load`: Minimum mill load (MW) - equipment constraints
-- `--max-load`: Maximum mill load (MW) - equipment capacity
-- `--min-compressors`: Minimum compressors that must be ON (1-3)
+- `--production-target` - Daily production target (tons), default: 500.0
+- `--min-inventory` - Minimum inventory (hours), default: 2.0
+- `--max-inventory` - Maximum inventory (hours), default: 8.0
 
 ### Operational Constraints
-- `--ramp-rate`: Maximum load change rate (MW/min) - grid stability
-- `--wastewater-frequency`: Wastewater must run every N hours - environmental compliance
+- `--ramp-rate` - Max load change rate (MW/min), default: 0.5
+- `--wastewater-frequency` - Wastewater runs every N hours, default: 4
+- `--min-compressors` - Minimum compressors ON (1-3), default: 1
+
+### Output
+- `--output` - Save schedule to CSV file (optional)
+
+Run `uv run python -m load_distribution.cli optimize --help` for complete list.
+
+---
 
 ## Demo Scenarios
 
-### Scenario 1: Baseline (500 tons/day production)
-```bash
-uv run python -m load_distribution.cli optimize \
-  --location HAY2201 \
-  --forecast-start "2024-04-01 00:00" \
-  --forecast-horizon 24 \
-  --production-target 500
-```
-**Result**: ~10% savings
+All demos use **2024-03-20 06:00** which provides good price variation ($242-270/MWh) and visible equipment scheduling changes.
 
-### Scenario 2: Reduced Production (200 tons/day)
+### 1. Baseline (Standard Operation)
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --forecast-start "2024-04-01 00:00" \
-  --forecast-horizon 24 \
-  --production-target 200
+  --date 2024-03-20 \
+  --time 06:00 \
+  --forecast-horizon 24
 ```
-**Result**: ~11-12% savings (more flexibility)
+**Result**: ~10% savings, moderate flexibility
 
-### Scenario 3: Limited Operating Modes (no 60% speed)
+### 2. Low Production (High Flexibility)
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --forecast-start "2024-04-01 00:00" \
+  --date 2024-03-20 \
+  --time 06:00 \
   --forecast-horizon 24 \
-  --production-target 500 \
-  --allow-pulper-60 false
+  --production-target 300
 ```
-**Result**: Similar or slightly worse savings (less flexibility)
+**Result**: ~11% savings, pulper drops to 60% during high prices, inventory swings 2.0-5.0 hours
 
-### Scenario 4: Tight Inventory Constraints
+### 3. Large Storage Tank
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --forecast-start "2024-04-01 00:00" \
+  --date 2024-03-20 \
+  --time 06:00 \
   --forecast-horizon 24 \
-  --production-target 500 \
+  --production-target 300 \
+  --max-inventory 12.0
+```
+**Result**: Higher savings, inventory can swing 2.0-12.0 hours, better load shifting
+
+### 4. Tight Constraints
+```bash
+uv run python -m load_distribution.cli optimize \
+  --location HAY2201 \
+  --date 2024-03-20 \
+  --time 06:00 \
+  --forecast-horizon 24 \
   --min-inventory 4.0 \
-  --max-inventory 6.0
+  --max-inventory 6.0 \
+  --ramp-rate 0.3
 ```
-**Result**: Slightly lower savings (tighter constraints = less flexibility)
+**Result**: Lower savings, narrow inventory range, slower load changes
 
-### Scenario 5: Aggressive Ramp Rate (faster load changes)
+### 5. Fast Ramp Rate
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --forecast-start "2024-04-01 00:00" \
+  --date 2024-03-20 \
+  --time 06:00 \
   --forecast-horizon 24 \
-  --production-target 500 \
+  --production-target 300 \
   --ramp-rate 1.0
 ```
-**Result**: More flexibility to respond to price changes
+**Result**: Faster response to price changes, more aggressive optimization
 
-### Scenario 6: Strict Environmental Compliance (wastewater every 2 hours)
+### 6. Strict Environmental Compliance
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --forecast-start "2024-04-01 00:00" \
+  --date 2024-03-20 \
+  --time 06:00 \
   --forecast-horizon 24 \
-  --production-target 500 \
   --wastewater-frequency 2
 ```
-**Result**: More frequent wastewater runs = higher costs
+**Result**: Wastewater runs every 2 hours, slightly higher costs
 
-### Scenario 7: High Production Mode (800 tons/day)
+### 7. Maximum Flexibility
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --forecast-start "2024-04-01 00:00" \
+  --date 2024-03-20 \
+  --time 06:00 \
   --forecast-horizon 24 \
-  --production-target 800 \
-  --allow-pulper-120 true
+  --production-target 300 \
+  --min-inventory 1.0 \
+  --max-inventory 12.0 \
+  --ramp-rate 1.0 \
+  --wastewater-frequency 8
 ```
-**Result**: Higher production = less flexibility = lower savings
+**Result**: Highest savings, wide load/inventory ranges, aggressive load shifting
 
-### Scenario 8: Different Location
-```bash
-uv run python -m load_distribution.cli optimize \
-  --location BEN2201 \
-  --forecast-start "2024-04-01 00:00" \
-  --forecast-horizon 24 \
-  --production-target 500
-```
-**Result**: Savings vary by location price patterns
+---
 
-### Scenario 9: Different Time Period
-```bash
-uv run python -m load_distribution.cli optimize \
-  --location HAY2201 \
-  --forecast-start "2024-05-15 00:00" \
-  --forecast-horizon 24 \
-  --production-target 500
-```
-**Result**: Savings vary by seasonal price patterns
+## Understanding the Output
 
-### Scenario 10: Legacy Mode (pre-generated CSV)
-```bash
-uv run python -m load_distribution.cli optimize \
-  --location HAY2201 \
-  --forecast-horizon 24 \
-  --production-target 500 \
-  --price-forecast-csv ../price_prediction/evaluation/predictions_20260309_092144.csv
-```
-**Result**: Uses pre-generated forecasts instead of calling prediction engine
+Each optimization shows:
 
-### Scenario 5: Aggressive Ramp Rate (faster load changes)
-```bash
-uv run python -m load_distribution.cli optimize \
-  --price-forecast ../price_prediction/evaluation/predictions_20260309_092144.csv \
-  --location HAY2201 \
-  --forecast-horizon 24 \
-  --production-target 500 \
-  --ramp-rate 1.0
-```
-**Result**: More flexibility to respond to price changes
+1. **Inputs**: Location, date/time, horizon, current state
+2. **Configuration**: All constraint settings and their impact
+3. **Price Forecast**: Integrated prediction engine results
+4. **Optimization Results**: Total cost, baseline cost, savings, solve time
+5. **Metrics**: Load ranges, inventory ranges, production totals
+6. **Schedule Sample**: First 12 periods with equipment settings, load, inventory, price, cost
 
-### Scenario 6: Strict Environmental Compliance (wastewater every 2 hours)
-```bash
-uv run python -m load_distribution.cli optimize \
-  --price-forecast ../price_prediction/evaluation/predictions_20260309_092144.csv \
-  --location HAY2201 \
-  --forecast-horizon 24 \
-  --production-target 500 \
-  --wastewater-frequency 2
-```
-**Result**: More frequent wastewater runs = higher costs
+---
 
-### Scenario 7: High Production Mode (800 tons/day)
-```bash
-uv run python -m load_distribution.cli optimize \
-  --price-forecast ../price_prediction/evaluation/predictions_20260309_092144.csv \
-  --location HAY2201 \
-  --forecast-horizon 24 \
-  --production-target 800 \
-  --allow-pulper-120 true
-```
-**Result**: Higher production = less flexibility = lower savings
+## Key Insights
 
-## Output
+### Production vs Flexibility Tradeoff
+- Lower production targets = more optimization flexibility = higher savings
+- 300 tons/day: ~11% savings (pulper can drop to 60%)
+- 500 tons/day: ~10% savings (pulper stays at 100%)
 
-The optimizer provides:
+### Storage Capacity Impact
+- Larger inventory buffers enable better load shifting
+- 2-8 hours: Standard flexibility
+- 1-12 hours: Maximum flexibility
+- 4-6 hours: Constrained operation
 
-1. **Configuration Summary**: Shows all constraint settings and their impact
-2. **Optimization Results**: Total cost, baseline cost, savings, solve time
-3. **Metrics**: Load ranges, inventory ranges, production totals
-4. **Schedule Sample**: First 12 periods showing equipment settings, load, inventory, prices
-5. **Optional CSV Export**: Full schedule for further analysis
+### Operational Constraints
+- **Ramp Rate**: Faster rates (1.0 MW/min) allow quicker response to prices
+- **Wastewater**: Less frequent (every 8 hours) provides more scheduling flexibility
+- **Compressors**: Minimum requirements reduce optimization options
+
+### Equipment Scheduling
+- **Pulper**: 60% (conservation), 100% (standard), 120% (high production)
+- **Compressors**: 3 units, each 1.5 MW, minimum 1 must be ON
+- **Wastewater Pump**: 1.5 MW, must run every N hours
+
+---
 
 ## Optimization Problem
 
 The system solves a Mixed Integer Linear Programming (MILP) problem:
 
-- **Objective**: Minimize total electricity cost
-- **Decision Variables**: Pulper speed (60/100/120%), compressor states (3x binary), wastewater pump (binary)
-- **State Variable**: Inventory level (hours of pulp in storage)
-- **Constraints**: 
-  - Load bounds (15.6 - 28.2 MW)
-  - Inventory bounds (2 - 8 hours)
-  - Ramp rate (0.5 MW/min)
-  - Production target (500 tons/day)
-  - Wastewater frequency (every 4 hours)
-  - Minimum compressors (1 must be ON)
+**Objective**: Minimize total electricity cost over forecast horizon
+
+**Decision Variables**:
+- Pulper speed: 60%, 100%, or 120% (integer choice)
+- Compressor states: 3 binary variables (ON/OFF)
+- Wastewater pump: binary variable (ON/OFF)
+
+**State Variable**:
+- Inventory level: continuous (hours of pulp in storage)
+
+**Constraints**:
+- Load bounds: 15.6 - 28.2 MW
+- Inventory bounds: 2 - 8 hours (configurable)
+- Ramp rate: 0.5 MW/min (configurable)
+- Production target: 500 tons/day (configurable)
+- Wastewater frequency: every 4 hours (configurable)
+- Minimum compressors: 1 must be ON (configurable)
 
 See `OPTIMIZATION_PROBLEM.md` for detailed mathematical formulation.
+
+---
+
+## Comparison of Scenarios
+
+See `RESULTS_COMPARISON.md` for detailed analysis of different constraint scenarios including:
+- Production target impact (200 vs 500 tons/day)
+- Inventory flexibility (tight vs wide ranges)
+- Pulper speed options (1 vs 3 speeds)
+- Load shifting capability
+- Solve time analysis
+
+---
 
 ## Architecture
 
@@ -252,23 +249,25 @@ load_distribution/
 │   ├── optimizer.py    # Core MILP optimizer
 │   ├── models.py       # Pydantic data models
 │   └── config.py       # Configuration constants
-├── OPTIMIZATION_PROBLEM.md  # Problem formulation
+├── OPTIMIZATION_PROBLEM.md  # Mathematical formulation
+├── RESULTS_COMPARISON.md    # Scenario analysis
 ├── README.md           # This file
 └── pyproject.toml      # Dependencies
 ```
 
-## Key Insights
+---
 
-1. **Production Flexibility**: Lower production targets allow more optimization flexibility
-2. **Operating Modes**: More speed options (60%, 100%, 120%) = better optimization
-3. **Storage Capacity**: Larger inventory buffers enable load shifting
-4. **Ramp Rates**: Faster ramp rates allow quicker response to price changes
-5. **Environmental Constraints**: More frequent wastewater runs reduce optimization flexibility
+## Tips for Demos
 
-## Next Steps
+1. Start with baseline (#1) to establish reference point
+2. Show low production (#2) to demonstrate clear pulper speed changes
+3. Compare storage scenarios (#3 vs #4) to show value of larger tanks
+4. Demonstrate constraint impact (#5, #6) on optimization
+5. End with extremes (#7) to show maximum flexibility
 
-1. Integrate with real-time price forecasts from Component 1
-2. Add uncertainty handling (robust optimization)
-3. Implement rolling horizon optimization
-4. Add equipment degradation costs
-5. Multi-day optimization with daily production targets
+**Why 2024-03-20 06:00 works well**:
+- Morning start captures high-price peak hours (6-9 AM)
+- Price range: $242-270/MWh (good variation)
+- Low production shows clear pulper speed changes
+- Inventory drops during high prices
+- Visible load-shifting behavior
