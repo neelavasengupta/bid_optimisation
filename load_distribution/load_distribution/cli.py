@@ -1,6 +1,8 @@
 """Command-line interface for load optimization."""
 
 import sys
+import os
+import asyncio
 import click
 import pandas as pd
 from datetime import datetime
@@ -9,9 +11,11 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
+from rich.markdown import Markdown
 
 from .models import OptimizationRequest, MillState, PriceForecast
 from .optimizer import LoadOptimizer
+from .insights import InsightGenerator
 
 console = Console()
 
@@ -64,10 +68,13 @@ def cli():
               help='Wastewater must run every N hours - environmental compliance')
 @click.option('--min-compressors', type=int, default=1, show_default=True,
               help='Minimum compressors that must be ON - process requirements')
+@click.option('--enable-insights/--no-insights', default=True, show_default=True,
+              help='Generate AI-powered insights (requires OPENAI_API_KEY)')
 def optimize(location, date, time, current_inventory, current_load,
              forecast_horizon, output,
              min_inventory, max_inventory, production_target,
-             ramp_rate, wastewater_frequency, min_compressors):
+             ramp_rate, wastewater_frequency, min_compressors,
+             enable_insights):
     """Optimize load distribution using integrated price forecasting."""
     
     console.print("\n[bold cyan]Paper Mill Load Optimization[/bold cyan]\n")
@@ -170,6 +177,11 @@ def optimize(location, date, time, current_inventory, current_load,
     
     # Display results
     _display_summary(result)
+    
+    # Generate AI insights if enabled
+    if enable_insights:
+        _display_ai_insights(result, location, forecast_start_dt)
+    
     _display_schedule_sample(result)
     
     # Save if requested
@@ -259,6 +271,62 @@ def _display_summary(result):
     
     console.print()
     console.print(table)
+
+
+def _display_ai_insights(result, location: str, forecast_start: datetime):
+    """Display AI-generated insights about the optimization."""
+    console.print()
+    
+    # Check for API key
+    if not os.getenv('OPENAI_API_KEY'):
+        console.print("[yellow]⚠ AI insights disabled: OPENAI_API_KEY not set[/yellow]")
+        console.print("[dim]Set OPENAI_API_KEY environment variable to enable insights[/dim]\n")
+        return
+    
+    console.print("[cyan]Generating AI insights...[/cyan]")
+    
+    try:
+        # Generate insights
+        generator = InsightGenerator()
+        insights = asyncio.run(
+            generator.generate_insights(result, location, forecast_start)
+        )
+        
+        # Display insights
+        console.print()
+        console.print(Panel.fit(
+            f"[bold magenta]AI-Powered Insights[/bold magenta]\n\n"
+            f"[white]{insights.executive_summary}[/white]",
+            border_style="magenta",
+            box=box.DOUBLE
+        ))
+        
+        # Key decisions
+        console.print()
+        console.print("[bold cyan]Key Decisions:[/bold cyan]")
+        for i, decision in enumerate(insights.key_decisions, 1):
+            console.print(f"  [cyan]{i}.[/cyan] {decision}")
+        
+        # Strategies
+        console.print()
+        console.print("[bold cyan]Price Strategy:[/bold cyan]")
+        console.print(f"  {insights.price_strategy}")
+        
+        console.print()
+        console.print("[bold cyan]Inventory Strategy:[/bold cyan]")
+        console.print(f"  {insights.inventory_strategy}")
+        
+        # Risk considerations
+        if insights.risk_considerations:
+            console.print()
+            console.print("[bold yellow]⚠ Risk Considerations:[/bold yellow]")
+            for risk in insights.risk_considerations:
+                console.print(f"  [yellow]•[/yellow] {risk}")
+        
+        console.print()
+        
+    except Exception as e:
+        console.print(f"[yellow]⚠ Could not generate insights: {e}[/yellow]\n")
 
 
 def _display_schedule_sample(result):

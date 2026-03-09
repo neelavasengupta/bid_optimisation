@@ -5,6 +5,7 @@ MILP-based load distribution optimizer for paper mill operations. Integrates wit
 ## Features
 
 - **Integrated Price Forecasting**: Automatically calls price prediction engine for fresh forecasts
+- **AI-Powered Insights**: Natural language explanations of optimization decisions using GPT-4o-mini
 - Mixed Integer Linear Programming (MILP) optimization using PuLP
 - Configurable constraints for different operational scenarios
 - Equipment scheduling: pulper speeds, compressors, wastewater pump
@@ -18,8 +19,31 @@ MILP-based load distribution optimizer for paper mill operations. Integrates wit
 # Install dependencies (includes price prediction engine dependencies)
 uv sync
 
+# Set OpenAI API key for AI insights (optional but recommended)
+export OPENAI_API_KEY="your-api-key-here"
+
 # Verify installation
 uv run python -m load_distribution.cli --help
+```
+
+## AI Insights
+
+The optimizer includes AI-powered insights that explain optimization decisions in natural language:
+
+- **Executive Summary**: High-level overview of the strategy
+- **Key Decisions**: Specific equipment scheduling choices that drove savings
+- **Price Strategy**: How the optimizer exploited price patterns
+- **Inventory Strategy**: How storage was used to enable load shifting
+- **Risk Considerations**: Potential constraints to monitor
+
+To enable insights, set your OpenAI API key:
+```bash
+export OPENAI_API_KEY="sk-..."
+```
+
+To disable insights:
+```bash
+uv run python -m load_distribution.cli optimize --no-insights ...
 ```
 
 ## Quick Start
@@ -173,7 +197,43 @@ Each optimization shows:
 2. **Configuration**: All constraint settings and their impact
 3. **Price Forecast**: Integrated prediction engine results
 4. **Optimization Results**: Total cost, baseline cost, savings, solve time
-5. **Metrics**: Load ranges, inventory ranges, production totals
+5. **AI Insights** (if enabled): Natural language explanation of key decisions
+6. **Solution Metrics**: Load ranges, inventory ranges, production totals
+7. **Schedule Sample**: First 12 periods showing equipment states
+
+### Example AI Insights Output
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║                     AI-Powered Insights                          ║
+╚══════════════════════════════════════════════════════════════════╝
+
+The optimizer achieved 10.2% savings by strategically shifting load to 
+low-price periods. Key strategy: build inventory during cheap overnight 
+hours (2-6am), then reduce load during expensive evening peak (5-8pm).
+
+Key Decisions:
+  1. Ran pulper at 120% during 2-6am ($45-55/MWh) to build inventory to 7.2 hours
+  2. Reduced pulper to 60% during 5-8pm price spike ($180-200/MWh)
+  3. Cycled compressors to match price patterns - 3 ON during valleys, 1 during peaks
+  4. Scheduled wastewater pump at 4am (lowest price) for compliance
+  5. Maintained 3.5+ hour inventory buffer to enable aggressive load shifting
+
+Price Strategy:
+  Exploited $155/MWh price spread by concentrating 68% of high-load periods 
+  in the bottom price quartile. Avoided running above 20MW during the 
+  $180+ evening peak.
+
+Inventory Strategy:
+  Used inventory as a buffer, swinging from 2.8 to 7.2 hours. Peak inventory 
+  at 6am enabled 4 hours of reduced pulper operation during expensive periods 
+  without production loss.
+
+⚠ Risk Considerations:
+  • Inventory drops to 2.8 hours at 7pm - close to minimum safety buffer
+  • Ramp rate constraint is binding in 3 periods - limited flexibility
+  • Price forecast uncertainty: ±$15/MWh could impact actual savings
+```
 6. **Schedule Sample**: First 12 periods with equipment settings, load, inventory, price, cost
 
 ---
