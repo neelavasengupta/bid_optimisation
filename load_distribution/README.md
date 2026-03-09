@@ -44,12 +44,26 @@ The optimizer includes AI-powered insights that explain optimization decisions i
 cp .env.example .env
 ```
 
-2. Add your OpenAI API key to `.env`:
+2. Add your API key to `.env` (choose one):
+
+**Option A: Claude (Anthropic)** - Recommended
 ```bash
-OPENAI_API_KEY=sk-your-api-key-here
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+```
+Get your key from: https://console.anthropic.com/settings/keys
+
+**Option B: OpenAI**
+```bash
+OPENAI_API_KEY=sk-your-key-here
+```
+Get your key from: https://platform.openai.com/api-keys
+
+3. (Optional) Choose a specific model:
+```bash
+AI_MODEL=claude-3-5-sonnet-20241022  # or gpt-4o-mini, gpt-4o, claude-3-5-haiku-20241022
 ```
 
-Get your API key from: https://platform.openai.com/api-keys
+If not specified, uses Claude 3.5 Sonnet if ANTHROPIC_API_KEY is set, otherwise GPT-4o-mini.
 
 ### Usage
 

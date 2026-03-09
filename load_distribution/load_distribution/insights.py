@@ -1,9 +1,12 @@
 """LLM-powered insights for optimization results using PydanticAI."""
 
+import os
+from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.models.anthropic import AnthropicModel
 
 
 class OptimizationInsight(BaseModel):
@@ -31,47 +34,51 @@ class OptimizationInsight(BaseModel):
     )
 
 
+def _load_system_prompt() -> str:
+    """Load system prompt from markdown file."""
+    prompt_path = Path(__file__).parent / "prompts" / "insights_system.md"
+    return prompt_path.read_text()
+
+
 class InsightGenerator:
     """Generate natural language insights from optimization results."""
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
         """
         Initialize insight generator.
         
         Args:
-            api_key: OpenAI API key. If None, will use OPENAI_API_KEY env var
+            api_key: API key for the model provider. If None, will use env vars
+            model_name: Model to use. If None, auto-detects based on available API keys
         """
-        # Use GPT-4o-mini for fast, cost-effective insights
-        model = OpenAIModel('gpt-4o-mini', api_key=api_key)
+        # Auto-detect model if not specified
+        if model_name is None:
+            model_name = os.getenv('AI_MODEL')
+            
+            # If still None, choose based on available API keys
+            if model_name is None:
+                if os.getenv('ANTHROPIC_API_KEY'):
+                    model_name = 'claude-3-5-sonnet-20241022'
+                elif os.getenv('OPENAI_API_KEY'):
+                    model_name = 'gpt-4o-mini'
+                else:
+                    raise ValueError("No API key found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY")
+        
+        # Create appropriate model
+        if model_name.startswith('claude'):
+            model = AnthropicModel(model_name, api_key=api_key)
+        elif model_name.startswith('gpt'):
+            model = OpenAIModel(model_name, api_key=api_key)
+        else:
+            raise ValueError(f"Unsupported model: {model_name}")
+        
+        # Load system prompt from file
+        system_prompt = _load_system_prompt()
         
         self.agent = Agent(
             model=model,
             result_type=OptimizationInsight,
-            system_prompt="""You are an expert energy analyst specializing in industrial load optimization.
-
-Your role is to explain optimization results in clear, actionable language that operations managers can understand.
-
-You receive a comprehensive optimization report with:
-- Problem setup (location, time, initial state)
-- All constraints and configuration
-- Complete schedule (every 30-min period with equipment states, loads, inventory, prices)
-- Financial results and metrics
-- Strategic pattern analysis
-
-Your job is to:
-1. Identify the 3-5 most important decisions that drove savings
-2. Explain HOW the optimizer exploited price patterns
-3. Explain WHY inventory was managed the way it was
-4. Identify constraint-driven vs. strategic decisions
-5. Note any risks or tight constraints to monitor
-
-Be specific with:
-- Times and period numbers
-- Equipment states (pulper speeds, compressor counts)
-- Prices and costs
-- Cause-and-effect relationships
-
-Explain technical concepts simply. Focus on actionable insights, not just descriptions."""
+            system_prompt=system_prompt
         )
     
     async def generate_insights(self, context: str) -> OptimizationInsight:
