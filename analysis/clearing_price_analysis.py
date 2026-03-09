@@ -10,7 +10,8 @@ from datetime import datetime
 
 # Setup
 DATA_DIR = Path(__file__).parent.parent / "data" / "raw" / "clearings"
-OUTPUT_DIR = Path(__file__).parent
+OUTPUT_DIR = Path(__file__).parent / "outputs"
+OUTPUT_DIR.mkdir(exist_ok=True)
 sns.set_style("whitegrid")
 plt.rcParams['figure.figsize'] = (14, 8)
 

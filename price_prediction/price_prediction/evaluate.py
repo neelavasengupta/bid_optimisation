@@ -576,7 +576,8 @@ class ReportGenerator:
         print("  ✓ Weather Impact Analysis")
         
         # Load weather data
-        weather_path = Path("../data/weather/weather_all_locations.csv")
+        from .config import WEATHER_DATA_FILE
+        weather_path = WEATHER_DATA_FILE
         if not weather_path.exists():
             print("    ⚠ Weather data not found, skipping weather analysis")
             return None

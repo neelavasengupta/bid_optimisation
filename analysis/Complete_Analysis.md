@@ -57,7 +57,7 @@ We analyzed 8.2 million clearing price records across 730 days (March 2024 - Mar
 
 South Island has slightly higher average prices and more volatility due to transmission constraints and hydro dependence.
 
-![Price Distribution](analysis/outputs/clearing_fig1_distribution.png)
+![Price Distribution](outputs/clearing_fig1_distribution.png)
 
 ---
 
@@ -142,7 +142,7 @@ Winter months (May-Aug) show dramatically higher prices than summer (Nov-Feb).
 
 **Operational implication:** Focus optimization exclusively on winter months (May-August). Summer prices are too low and flat to justify complexity.
 
-![Temporal Patterns](analysis/outputs/clearing_fig2_temporal.png)
+![Temporal Patterns](outputs/clearing_fig2_temporal.png)
 
 ---
 
@@ -182,11 +182,11 @@ Prices vary significantly by location due to transmission constraints and local 
 
 **Operational implication:** Know your mill's specific location code. Prices can vary by 7x between locations. Use location-specific patterns for optimization.
 
-![Temporal Patterns Including Hour x Day Heatmap](analysis/outputs/clearing_fig2_temporal.png)
+![Temporal Patterns Including Hour x Day Heatmap](outputs/clearing_fig2_temporal.png)
 
 The bottom-right panel shows the hour x day of week interaction. Notice how weekends (Sat/Sun) are consistently cheaper across all hours, while weekday evenings (5pm-7pm) show the highest prices.
 
-![Time Series by Location](analysis/outputs/clearing_fig3_timeseries.png)
+![Time Series by Location](outputs/clearing_fig3_timeseries.png)
 
 ---
 
@@ -194,7 +194,7 @@ The bottom-right panel shows the hour x day of week interaction. Notice how week
 
 The three patterns don't operate independently - they interact. Most importantly: **time-of-day optimization only makes sense in certain months**.
 
-![Hour vs Month Heatmap](analysis/outputs/clearing_fig4_hour_month_heatmap.png)
+![Hour vs Month Heatmap](outputs/clearing_fig4_hour_month_heatmap.png)
 
 **Key insights from the heatmap:**
 
