@@ -21,6 +21,21 @@ Each subdirectory contains its own README with specific setup and usage instruct
 
 Navigate to the specific project directory and follow its README instructions.
 
-## Data
+## Data Setup
 
-Data files are not included in the repository. Download scripts are provided in the respective project directories.
+**Data files are NOT included in this repository** (5.3GB excluded to keep repo lightweight).
+
+To download data:
+
+```bash
+# Download clearing prices (required for price prediction)
+cd price_prediction
+uv run python download_clearing_prices.py
+
+# Download bid data (optional, for analysis)
+uv run python download_bid_data.py
+```
+
+This will download ~5GB of data from the NZ Electricity Market (EMI) public API.
+
+**Note**: Weather data must be obtained separately (not automated).

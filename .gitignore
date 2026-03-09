@@ -1,5 +1,4 @@
 # Python
-*.pkl
 *.pyc
 __pycache__/
 *.py[cod]
@@ -27,11 +26,14 @@ env/
 .DS_Store
 Thumbs.db
 
-# Models and large files
-models/*
-
-# Data - exclude all data files
+# Data - exclude raw data files (users will download fresh)
 data/
 
 # Outputs
 *.log
+
+# KEEP these files - required for CLIs to work:
+# - price_prediction/models/price_predictor/ (trained model)
+# - price_prediction/evaluation/ground_truth.csv (historical data)
+# - price_prediction/evaluation/static_features.csv (location features)
+# - price_prediction/evaluation/predictions_*.csv (sample predictions)

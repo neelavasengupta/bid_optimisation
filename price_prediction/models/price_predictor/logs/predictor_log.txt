@@ -1,0 +1,565 @@
+Beginning AutoGluon training... Time limit = 5400s
+AutoGluon will save models to '/Users/si308726/Projects/bid_optimisation/price_prediction/models/price_predictor'
+=================== System Info ===================
+AutoGluon Version:  1.5.0
+Python Version:     3.11.13
+Operating System:   Darwin
+Platform Machine:   arm64
+Platform Version:   Darwin Kernel Version 25.3.0: Wed Jan 28 20:48:41 PST 2026; root:xnu-12377.81.4~5/RELEASE_ARM64_T6041
+CPU Count:          14
+Pytorch Version:    2.9.1
+CUDA Version:       CUDA is not available
+GPU Count:          WARNING: Exception was raised when calculating GPU count (AssertionError)
+Memory Avail:       9.99 GB / 24.00 GB (41.6%)
+Disk Space Avail:   245.56 GB / 460.43 GB (53.3%)
+===================================================
+
+Fitting with arguments:
+{'enable_ensemble': True,
+ 'eval_metric': MAE,
+ 'freq': '30min',
+ 'hyperparameters': {'DirectTabular_CAT': {'max_num_items': None,
+                                           'model_name': 'CAT',
+                                           'target_scaler': 'robust'},
+                     'DirectTabular_GBM': {'max_num_items': None,
+                                           'model_name': 'GBM',
+                                           'target_scaler': 'robust'},
+                     'DirectTabular_XGB': {'max_num_items': None,
+                                           'model_name': 'XGB',
+                                           'target_scaler': 'robust'},
+                     'RecursiveTabular': {'max_num_items': None,
+                                          'model_name': 'GBM',
+                                          'target_scaler': 'robust'}},
+ 'known_covariates_names': ['hour',
+                            'day_of_week',
+                            'month',
+                            'is_weekend',
+                            'is_holiday',
+                            'temperature',
+                            'temperature_sq',
+                            'humidity',
+                            'precipitation',
+                            'wind_speed',
+                            'solar_radiation',
+                            'heating_degree_days',
+                            'cooling_degree_days'],
+ 'num_val_windows': 3,
+ 'prediction_length': 672,
+ 'quantile_levels': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+ 'random_seed': 123,
+ 'refit_every_n_windows': 1,
+ 'refit_full': False,
+ 'skip_model_selection': False,
+ 'target': 'target',
+ 'time_limit': 5400,
+ 'verbosity': 3}
+
+train_data with frequency 'IRREG' has been resampled to frequency '30min'.
+Provided train_data has 8467227 rows (NaN fraction=3.2%), 244 time series. Median time series length is 35040 (min=8640, max=35040). 
+
+Provided data contains following columns:
+	target: 'target'
+	known_covariates:
+		categorical:        []
+		continuous (float): ['hour', 'day_of_week', 'month', 'is_weekend', 'is_holiday', 'temperature', ...]
+	static_features:
+		categorical:        ['Island', 'PointOfConnection']
+		continuous (float): []
+
+To learn how to fix incorrectly inferred types, please see documentation for TimeSeriesPredictor.fit
+
+AutoGluon will gauge predictive performance using evaluation metric: 'MAE'
+	This metric's sign has been flipped to adhere to being higher_is_better. The metric score can be multiplied by -1 to get the metric value.
+===================================================
+
+Starting training. Start time is 2026-03-08 12:13:28
+Beginning AutoGluon training... Time limit = 5400s
+AutoGluon will save models to '/Users/si308726/Projects/bid_optimisation/price_prediction/models/price_predictor'
+=================== System Info ===================
+AutoGluon Version:  1.5.0
+Python Version:     3.11.13
+Operating System:   Darwin
+Platform Machine:   arm64
+Platform Version:   Darwin Kernel Version 25.3.0: Wed Jan 28 20:48:41 PST 2026; root:xnu-12377.81.4~5/RELEASE_ARM64_T6041
+CPU Count:          14
+Pytorch Version:    2.9.1
+CUDA Version:       CUDA is not available
+GPU Count:          WARNING: Exception was raised when calculating GPU count (AssertionError)
+Memory Avail:       10.48 GB / 24.00 GB (43.7%)
+Disk Space Avail:   245.04 GB / 460.43 GB (53.2%)
+===================================================
+
+Fitting with arguments:
+{'enable_ensemble': True,
+ 'eval_metric': MAE,
+ 'freq': '30min',
+ 'hyperparameters': {'DirectTabular': {}, 'RecursiveTabular': {}},
+ 'known_covariates_names': ['hour',
+                            'day_of_week',
+                            'month',
+                            'is_weekend',
+                            'is_holiday',
+                            'temperature',
+                            'temperature_sq',
+                            'humidity',
+                            'precipitation',
+                            'wind_speed',
+                            'solar_radiation',
+                            'heating_degree_days',
+                            'cooling_degree_days'],
+ 'num_val_windows': 3,
+ 'prediction_length': 672,
+ 'quantile_levels': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+ 'random_seed': 123,
+ 'refit_every_n_windows': 1,
+ 'refit_full': False,
+ 'skip_model_selection': False,
+ 'target': 'target',
+ 'time_limit': 5400,
+ 'verbosity': 3}
+
+train_data with frequency 'IRREG' has been resampled to frequency '30min'.
+Provided train_data has 8467227 rows (NaN fraction=3.2%), 244 time series. Median time series length is 35040 (min=8640, max=35040). 
+
+Provided data contains following columns:
+	target: 'target'
+	known_covariates:
+		categorical:        []
+		continuous (float): ['hour', 'day_of_week', 'month', 'is_weekend', 'is_holiday', 'temperature', ...]
+	static_features:
+		categorical:        ['Island', 'PointOfConnection']
+		continuous (float): []
+
+To learn how to fix incorrectly inferred types, please see documentation for TimeSeriesPredictor.fit
+
+AutoGluon will gauge predictive performance using evaluation metric: 'MAE'
+	This metric's sign has been flipped to adhere to being higher_is_better. The metric score can be multiplied by -1 to get the metric value.
+===================================================
+
+Starting training. Start time is 2026-03-08 12:14:04
+Models that will be trained: ['RecursiveTabular', 'DirectTabular']
+Training timeseries model RecursiveTabular. Training for up to 2395.8s of the 5391.6s of remaining time.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+Beginning AutoGluon training... Time limit = 5400s
+AutoGluon will save models to '/Users/si308726/Projects/bid_optimisation/price_prediction/models/price_predictor'
+=================== System Info ===================
+AutoGluon Version:  1.5.0
+Python Version:     3.11.13
+Operating System:   Darwin
+Platform Machine:   arm64
+Platform Version:   Darwin Kernel Version 25.3.0: Wed Jan 28 20:48:41 PST 2026; root:xnu-12377.81.4~5/RELEASE_ARM64_T6041
+CPU Count:          14
+Pytorch Version:    2.9.1
+CUDA Version:       CUDA is not available
+GPU Count:          WARNING: Exception was raised when calculating GPU count (AssertionError)
+Memory Avail:       10.55 GB / 24.00 GB (43.9%)
+Disk Space Avail:   245.04 GB / 460.43 GB (53.2%)
+===================================================
+
+Fitting with arguments:
+{'enable_ensemble': True,
+ 'eval_metric': MAE,
+ 'freq': '30min',
+ 'hyperparameters': {'DirectTabular': {'tabular_hyperparameters': {'CAT': {},
+                                                                   'GBM': {},
+                                                                   'XGB': {}}},
+                     'RecursiveTabular': {'tabular_hyperparameters': {'GBM': {}}}},
+ 'known_covariates_names': ['hour',
+                            'day_of_week',
+                            'month',
+                            'is_weekend',
+                            'is_holiday',
+                            'temperature',
+                            'temperature_sq',
+                            'humidity',
+                            'precipitation',
+                            'wind_speed',
+                            'solar_radiation',
+                            'heating_degree_days',
+                            'cooling_degree_days'],
+ 'num_val_windows': 3,
+ 'prediction_length': 672,
+ 'quantile_levels': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+ 'random_seed': 123,
+ 'refit_every_n_windows': 1,
+ 'refit_full': False,
+ 'skip_model_selection': False,
+ 'target': 'target',
+ 'time_limit': 5400,
+ 'verbosity': 3}
+
+train_data with frequency 'IRREG' has been resampled to frequency '30min'.
+Provided train_data has 8467227 rows (NaN fraction=3.2%), 244 time series. Median time series length is 35040 (min=8640, max=35040). 
+
+Provided data contains following columns:
+	target: 'target'
+	known_covariates:
+		categorical:        []
+		continuous (float): ['hour', 'day_of_week', 'month', 'is_weekend', 'is_holiday', 'temperature', ...]
+	static_features:
+		categorical:        ['Island', 'PointOfConnection']
+		continuous (float): []
+
+To learn how to fix incorrectly inferred types, please see documentation for TimeSeriesPredictor.fit
+Beginning AutoGluon training... Time limit = 5400s
+AutoGluon will save models to '/Users/si308726/Projects/bid_optimisation/price_prediction/models/price_predictor'
+=================== System Info ===================
+AutoGluon Version:  1.5.0
+Python Version:     3.11.13
+Operating System:   Darwin
+Platform Machine:   arm64
+Platform Version:   Darwin Kernel Version 25.3.0: Wed Jan 28 20:48:41 PST 2026; root:xnu-12377.81.4~5/RELEASE_ARM64_T6041
+CPU Count:          14
+Pytorch Version:    2.9.1
+CUDA Version:       CUDA is not available
+GPU Count:          WARNING: Exception was raised when calculating GPU count (AssertionError)
+Memory Avail:       11.17 GB / 24.00 GB (46.5%)
+Disk Space Avail:   245.03 GB / 460.43 GB (53.2%)
+===================================================
+
+Fitting with arguments:
+{'enable_ensemble': True,
+ 'eval_metric': MAE,
+ 'freq': '30min',
+ 'hyperparameters': {'DirectTabular': {'tabular_hyperparameters': {'CAT': {},
+                                                                   'GBM': {},
+                                                                   'XGB': {}},
+                                       'target_scaler': 'robust'},
+                     'RecursiveTabular': {'tabular_hyperparameters': {'GBM': {}},
+                                          'target_scaler': 'robust'}},
+ 'known_covariates_names': ['hour',
+                            'day_of_week',
+                            'month',
+                            'is_weekend',
+                            'is_holiday',
+                            'temperature',
+                            'temperature_sq',
+                            'humidity',
+                            'precipitation',
+                            'wind_speed',
+                            'solar_radiation',
+                            'heating_degree_days',
+                            'cooling_degree_days'],
+ 'num_val_windows': 3,
+ 'prediction_length': 672,
+ 'quantile_levels': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+ 'random_seed': 123,
+ 'refit_every_n_windows': 1,
+ 'refit_full': False,
+ 'skip_model_selection': False,
+ 'target': 'target',
+ 'time_limit': 5400,
+ 'verbosity': 3}
+
+train_data with frequency 'IRREG' has been resampled to frequency '30min'.
+Provided train_data has 8467227 rows (NaN fraction=3.2%), 244 time series. Median time series length is 35040 (min=8640, max=35040). 
+
+Provided data contains following columns:
+	target: 'target'
+	known_covariates:
+		categorical:        []
+		continuous (float): ['hour', 'day_of_week', 'month', 'is_weekend', 'is_holiday', 'temperature', ...]
+	static_features:
+		categorical:        ['Island', 'PointOfConnection']
+		continuous (float): []
+
+To learn how to fix incorrectly inferred types, please see documentation for TimeSeriesPredictor.fit
+
+AutoGluon will gauge predictive performance using evaluation metric: 'MAE'
+	This metric's sign has been flipped to adhere to being higher_is_better. The metric score can be multiplied by -1 to get the metric value.
+===================================================
+
+Starting training. Start time is 2026-03-08 12:16:03
+Models that will be trained: ['RecursiveTabular', 'DirectTabular']
+Training timeseries model RecursiveTabular. Training for up to 2395.6s of the 5391.3s of remaining time.
+RecursiveTabular/W0 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for RecursiveTabular/W0 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+RecursiveTabular/W1 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for RecursiveTabular/W1 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+RecursiveTabular/W2 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for RecursiveTabular/W2 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+	-33.5397      = Validation score (-MAE)
+	472.02  s     = Training runtime
+	11.85   s     = Validation (prediction) runtime
+Training timeseries model DirectTabular. Training for up to 4307.3s of the 4907.3s of remaining time.
+DirectTabular/W0 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for DirectTabular/W0 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+DirectTabular/W1 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for DirectTabular/W1 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+DirectTabular/W2 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for DirectTabular/W2 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+	-33.5623      = Validation score (-MAE)
+	402.95  s     = Training runtime
+	11.87   s     = Validation (prediction) runtime
+Fitting 1 ensemble(s), in 1 layers.
+Training ensemble model WeightedEnsemble. Training for up to 4490.5s.
+	Ensemble weights: {'DirectTabular': 0.5, 'RecursiveTabular': 0.5}
+	-31.2931      = Validation score (-MAE)
+	4.44    s     = Training runtime
+	23.73   s     = Validation (prediction) runtime
+Training complete. Models trained: ['RecursiveTabular', 'DirectTabular', 'WeightedEnsemble']
+Total runtime: 908.52 s
+Best model: WeightedEnsemble
+Best model score: -31.2931
+data with frequency 'IRREG' has been resampled to frequency '30min'.
+Model not specified in predict, will default to the model with the best validation score: WeightedEnsemble
+data with frequency 'IRREG' has been resampled to frequency '30min'.
+Additional data provided, testing on additional data. Resulting leaderboard will be sorted according to test score (`score_test`).
+Beginning AutoGluon training... Time limit = 5400s
+AutoGluon will save models to '/Users/si308726/Projects/bid_optimisation/price_prediction/models/price_predictor'
+=================== System Info ===================
+AutoGluon Version:  1.5.0
+Python Version:     3.11.13
+Operating System:   Darwin
+Platform Machine:   arm64
+Platform Version:   Darwin Kernel Version 25.3.0: Wed Jan 28 20:48:41 PST 2026; root:xnu-12377.81.4~5/RELEASE_ARM64_T6041
+CPU Count:          14
+Pytorch Version:    2.9.1
+CUDA Version:       CUDA is not available
+GPU Count:          WARNING: Exception was raised when calculating GPU count (AssertionError)
+Memory Avail:       8.82 GB / 24.00 GB (36.7%)
+Disk Space Avail:   244.70 GB / 460.43 GB (53.1%)
+===================================================
+
+Fitting with arguments:
+{'enable_ensemble': True,
+ 'eval_metric': MAE,
+ 'freq': '30min',
+ 'hyperparameters': {'DeepAR': {'context_length': 96,
+                                'epochs': 50,
+                                'num_batches_per_epoch': 50},
+                     'DirectTabular': {'tabular_hyperparameters': {'CAT': {},
+                                                                   'GBM': {},
+                                                                   'XGB': {}}},
+                     'RecursiveTabular': {'tabular_hyperparameters': {'GBM': {}}},
+                     'TemporalFusionTransformer': {'context_length': 96,
+                                                   'epochs': 50,
+                                                   'num_batches_per_epoch': 50}},
+ 'known_covariates_names': ['hour',
+                            'day_of_week',
+                            'month',
+                            'is_weekend',
+                            'is_holiday',
+                            'temperature',
+                            'temperature_sq',
+                            'humidity',
+                            'precipitation',
+                            'wind_speed',
+                            'solar_radiation',
+                            'heating_degree_days',
+                            'cooling_degree_days'],
+ 'num_val_windows': 3,
+ 'prediction_length': 96,
+ 'quantile_levels': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+ 'random_seed': 123,
+ 'refit_every_n_windows': 1,
+ 'refit_full': False,
+ 'skip_model_selection': False,
+ 'target': 'target',
+ 'time_limit': 5400,
+ 'verbosity': 3}
+
+train_data with frequency 'IRREG' has been resampled to frequency '30min'.
+Provided train_data has 8467227 rows (NaN fraction=3.2%), 244 time series. Median time series length is 35040 (min=8640, max=35040). 
+
+Provided data contains following columns:
+	target: 'target'
+	known_covariates:
+		categorical:        []
+		continuous (float): ['hour', 'day_of_week', 'month', 'is_weekend', 'is_holiday', 'temperature', ...]
+	static_features:
+		categorical:        ['Island', 'PointOfConnection']
+		continuous (float): []
+
+To learn how to fix incorrectly inferred types, please see documentation for TimeSeriesPredictor.fit
+
+AutoGluon will gauge predictive performance using evaluation metric: 'MAE'
+	This metric's sign has been flipped to adhere to being higher_is_better. The metric score can be multiplied by -1 to get the metric value.
+===================================================
+
+Starting training. Start time is 2026-03-08 13:11:12
+Models that will be trained: ['RecursiveTabular', 'DirectTabular', 'TemporalFusionTransformer', 'DeepAR']
+Training timeseries model RecursiveTabular. Training for up to 1197.9s of the 5391.5s of remaining time.
+RecursiveTabular/W0 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for RecursiveTabular/W0 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+RecursiveTabular/W1 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for RecursiveTabular/W1 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+RecursiveTabular/W2 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for RecursiveTabular/W2 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+	-42.6156      = Validation score (-MAE)
+	468.39  s     = Training runtime
+	5.47    s     = Validation (prediction) runtime
+Training timeseries model DirectTabular. Training for up to 1439.2s of the 4917.5s of remaining time.
+DirectTabular/W0 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for DirectTabular/W0 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+DirectTabular/W1 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for DirectTabular/W1 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+DirectTabular/W2 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for DirectTabular/W2 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+	-30.9979      = Validation score (-MAE)
+	467.02  s     = Training runtime
+	8.84    s     = Validation (prediction) runtime
+Training timeseries model TemporalFusionTransformer. Training for up to 1920.8s of the 4441.6s of remaining time.
+	Warning: Exception caused TemporalFusionTransformer to fail during training... Skipping this model.
+Traceback (most recent call last):
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/trainer/trainer.py", line 353, in _train_and_save
+    model.fit(
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/models/abstract/abstract_timeseries_model.py", line 529, in fit
+    self._fit(
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/models/multi_window/multi_window_model.py", line 141, in _fit
+    model.fit(
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/models/abstract/abstract_timeseries_model.py", line 488, in fit
+    self._initialize_transforms_and_regressor()
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/models/abstract/abstract_timeseries_model.py", line 427, in _initialize_transforms_and_regressor
+    self.target_scaler = get_target_scaler(self.get_hyperparameters().get("target_scaler"), target=self.target)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/models/gluonts/abstract.py", line 232, in get_hyperparameters
+    raise ValueError(f"Parameter '{alias}' cannot be specified when '{actual}' is also specified.")
+ValueError: Parameter 'epochs' cannot be specified when 'max_epochs' is also specified.
+
+Training timeseries model DeepAR. Training for up to 3840.9s of the 4440.9s of remaining time.
+	Warning: Exception caused DeepAR to fail during training... Skipping this model.
+Traceback (most recent call last):
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/trainer/trainer.py", line 353, in _train_and_save
+    model.fit(
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/models/abstract/abstract_timeseries_model.py", line 529, in fit
+    self._fit(
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/models/multi_window/multi_window_model.py", line 141, in _fit
+    model.fit(
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/models/abstract/abstract_timeseries_model.py", line 488, in fit
+    self._initialize_transforms_and_regressor()
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/models/abstract/abstract_timeseries_model.py", line 427, in _initialize_transforms_and_regressor
+    self.target_scaler = get_target_scaler(self.get_hyperparameters().get("target_scaler"), target=self.target)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/si308726/Projects/bid_optimisation/price_prediction/.venv/lib/python3.11/site-packages/autogluon/timeseries/models/gluonts/abstract.py", line 232, in get_hyperparameters
+    raise ValueError(f"Parameter '{alias}' cannot be specified when '{actual}' is also specified.")
+ValueError: Parameter 'epochs' cannot be specified when 'max_epochs' is also specified.
+
+Fitting 1 ensemble(s), in 1 layers.
+Training ensemble model WeightedEnsemble. Training for up to 4438.2s.
+	Ensemble weights: {'DirectTabular': 0.84, 'RecursiveTabular': 0.16}
+	-30.4239      = Validation score (-MAE)
+	2.03    s     = Training runtime
+	14.30   s     = Validation (prediction) runtime
+Training complete. Models trained: ['RecursiveTabular', 'DirectTabular', 'WeightedEnsemble']
+Total runtime: 958.45 s
+Best model: WeightedEnsemble
+Best model score: -30.4239
+data with frequency 'IRREG' has been resampled to frequency '30min'.
+Model not specified in predict, will default to the model with the best validation score: WeightedEnsemble
+data with frequency 'IRREG' has been resampled to frequency '30min'.
+Additional data provided, testing on additional data. Resulting leaderboard will be sorted according to test score (`score_test`).
+Beginning AutoGluon training... Time limit = 5400s
+AutoGluon will save models to '/Users/si308726/Projects/bid_optimisation/price_prediction/models/price_predictor'
+=================== System Info ===================
+AutoGluon Version:  1.5.0
+Python Version:     3.11.13
+Operating System:   Darwin
+Platform Machine:   arm64
+Platform Version:   Darwin Kernel Version 25.3.0: Wed Jan 28 20:48:41 PST 2026; root:xnu-12377.81.4~5/RELEASE_ARM64_T6041
+CPU Count:          14
+Pytorch Version:    2.9.1
+CUDA Version:       CUDA is not available
+GPU Count:          WARNING: Exception was raised when calculating GPU count (AssertionError)
+Memory Avail:       9.49 GB / 24.00 GB (39.5%)
+Disk Space Avail:   244.80 GB / 460.43 GB (53.2%)
+===================================================
+
+Fitting with arguments:
+{'enable_ensemble': True,
+ 'eval_metric': MAE,
+ 'freq': '30min',
+ 'hyperparameters': {'DeepAR': {'context_length': 96,
+                                'num_batches_per_epoch': 50},
+                     'DirectTabular': {'tabular_hyperparameters': {'CAT': {},
+                                                                   'GBM': {},
+                                                                   'XGB': {}}},
+                     'RecursiveTabular': {'tabular_hyperparameters': {'GBM': {}}},
+                     'TemporalFusionTransformer': {'context_length': 96,
+                                                   'num_batches_per_epoch': 50}},
+ 'known_covariates_names': ['hour',
+                            'day_of_week',
+                            'month',
+                            'is_weekend',
+                            'is_holiday',
+                            'temperature',
+                            'temperature_sq',
+                            'humidity',
+                            'precipitation',
+                            'wind_speed',
+                            'solar_radiation',
+                            'heating_degree_days',
+                            'cooling_degree_days'],
+ 'num_val_windows': 3,
+ 'prediction_length': 96,
+ 'quantile_levels': [0.1, 0.5, 0.9],
+ 'random_seed': 123,
+ 'refit_every_n_windows': 1,
+ 'refit_full': False,
+ 'skip_model_selection': False,
+ 'target': 'target',
+ 'time_limit': 5400,
+ 'verbosity': 3}
+
+train_data with frequency 'IRREG' has been resampled to frequency '30min'.
+Provided train_data has 8467227 rows (NaN fraction=3.2%), 244 time series. Median time series length is 35040 (min=8640, max=35040). 
+
+Provided data contains following columns:
+	target: 'target'
+	known_covariates:
+		categorical:        []
+		continuous (float): ['hour', 'day_of_week', 'month', 'is_weekend', 'is_holiday', 'temperature', ...]
+	static_features:
+		categorical:        ['Island', 'PointOfConnection']
+		continuous (float): []
+
+To learn how to fix incorrectly inferred types, please see documentation for TimeSeriesPredictor.fit
+
+AutoGluon will gauge predictive performance using evaluation metric: 'MAE'
+	This metric's sign has been flipped to adhere to being higher_is_better. The metric score can be multiplied by -1 to get the metric value.
+===================================================
+
+Starting training. Start time is 2026-03-08 16:54:44
+Models that will be trained: ['RecursiveTabular', 'DirectTabular', 'TemporalFusionTransformer', 'DeepAR']
+Training timeseries model RecursiveTabular. Training for up to 1197.9s of the 5391.6s of remaining time.
+RecursiveTabular/W0 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for RecursiveTabular/W0 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+RecursiveTabular/W1 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for RecursiveTabular/W1 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+RecursiveTabular/W2 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for RecursiveTabular/W2 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+	-42.6156      = Validation score (-MAE)
+	451.57  s     = Training runtime
+	5.14    s     = Validation (prediction) runtime
+Training timeseries model DirectTabular. Training for up to 1444.9s of the 4934.8s of remaining time.
+DirectTabular/W0 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for DirectTabular/W0 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+DirectTabular/W1 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for DirectTabular/W1 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+DirectTabular/W2 ignores following hyperparameters: ['tabular_hyperparameters']. See the documentation for DirectTabular/W2 for the list of supported hyperparameters.
+	Removed automatic date_features ['day_of_week'] since they clash with known_covariates
+	-30.9979      = Validation score (-MAE)
+	454.06  s     = Training runtime
+	8.54    s     = Validation (prediction) runtime
+Training timeseries model TemporalFusionTransformer. Training for up to 1936.1s of the 4472.1s of remaining time.
+	-32.9427      = Validation score (-MAE)
+	529.47  s     = Training runtime
+	2.56    s     = Validation (prediction) runtime
+Training timeseries model DeepAR. Training for up to 3340.1s of the 3940.1s of remaining time.
+	-36.2442      = Validation score (-MAE)
+	880.45  s     = Training runtime
+	7.90    s     = Validation (prediction) runtime
+Fitting 1 ensemble(s), in 1 layers.
+Training ensemble model WeightedEnsemble. Training for up to 3049.7s.
+	Ensemble weights: {'DeepAR': 0.14, 'DirectTabular': 0.47, 'RecursiveTabular': 0.11, 'TemporalFusionTransformer': 0.28}
+	-28.8241      = Validation score (-MAE)
+	1.84    s     = Training runtime
+	24.14   s     = Validation (prediction) runtime
+Training complete. Models trained: ['RecursiveTabular', 'DirectTabular', 'TemporalFusionTransformer', 'DeepAR', 'WeightedEnsemble']
+Total runtime: 2346.80 s
+Best model: WeightedEnsemble
+Best model score: -28.8241
+data with frequency 'IRREG' has been resampled to frequency '30min'.
+Model not specified in predict, will default to the model with the best validation score: WeightedEnsemble
+data with frequency 'IRREG' has been resampled to frequency '30min'.
+Additional data provided, testing on additional data. Resulting leaderboard will be sorted according to test score (`score_test`).
