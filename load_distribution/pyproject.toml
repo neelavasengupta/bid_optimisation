@@ -12,7 +12,6 @@ dependencies = [
     "plotext>=5.3.0",
     "pulp>=3.3.0",
     "pydantic-ai>=0.0.14",
-    "openai>=1.0.0",
     "python-dotenv>=1.0.0",
     # Price prediction dependencies for integration
     "scikit-learn>=1.3",

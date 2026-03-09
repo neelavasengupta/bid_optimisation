@@ -293,25 +293,13 @@ def _display_ai_insights(result, request: OptimizationRequest, optimizer_config:
     """Display AI-generated insights about the optimization."""
     console.print()
     
-    # Check for API keys
-    has_openai = bool(os.getenv('OPENAI_API_KEY'))
-    has_anthropic = bool(os.getenv('ANTHROPIC_API_KEY'))
-    
-    if not has_openai and not has_anthropic:
-        console.print("[yellow]⚠ AI insights disabled: No API key found[/yellow]")
-        console.print("[dim]Set OPENAI_API_KEY or ANTHROPIC_API_KEY in .env file[/dim]\n")
+    # Check for API key
+    if not os.getenv('ANTHROPIC_API_KEY'):
+        console.print("[yellow]⚠ AI insights disabled: ANTHROPIC_API_KEY not set[/yellow]")
+        console.print("[dim]Set ANTHROPIC_API_KEY in .env file[/dim]\n")
         return
     
-    # Determine which model is being used
-    model_name = os.getenv('AI_MODEL')
-    if model_name:
-        model_display = model_name
-    elif has_anthropic:
-        model_display = "Claude 3.5 Sonnet"
-    else:
-        model_display = "GPT-4o-mini"
-    
-    console.print(f"[cyan]Generating AI insights using {model_display}...[/cyan]")
+    console.print("[cyan]Generating AI insights using Claude 3.5 Sonnet...[/cyan]")
     
     try:
         # Prepare comprehensive context

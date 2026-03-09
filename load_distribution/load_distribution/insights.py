@@ -1,11 +1,9 @@
 """LLM-powered insights for optimization results using PydanticAI."""
 
-import os
 from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.models.anthropic import AnthropicModel
 
 
@@ -41,38 +39,16 @@ def _load_system_prompt() -> str:
 
 
 class InsightGenerator:
-    """Generate natural language insights from optimization results."""
+    """Generate natural language insights from optimization results using Claude."""
     
-    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None):
         """
         Initialize insight generator.
         
         Args:
-            api_key: API key for the model provider. If None, will use env vars
-            model_name: Model to use. If None, auto-detects based on available API keys
+            api_key: Anthropic API key. If None, will use ANTHROPIC_API_KEY env var
         """
-        # Auto-detect model if not specified
-        if model_name is None:
-            model_name = os.getenv('AI_MODEL')
-            
-            # If still None, choose based on available API keys
-            if model_name is None:
-                if os.getenv('ANTHROPIC_API_KEY'):
-                    model_name = 'claude-3-5-sonnet-20241022'
-                elif os.getenv('OPENAI_API_KEY'):
-                    model_name = 'gpt-4o-mini'
-                else:
-                    raise ValueError("No API key found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY")
-        
-        # Create appropriate model
-        if model_name.startswith('claude'):
-            model = AnthropicModel(model_name, api_key=api_key)
-        elif model_name.startswith('gpt'):
-            model = OpenAIModel(model_name, api_key=api_key)
-        else:
-            raise ValueError(f"Unsupported model: {model_name}")
-        
-        # Load system prompt from file
+        model = AnthropicModel('claude-3-5-sonnet-20241022', api_key=api_key)
         system_prompt = _load_system_prompt()
         
         self.agent = Agent(
