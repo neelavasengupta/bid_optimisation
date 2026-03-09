@@ -180,7 +180,19 @@ def optimize(location, date, time, current_inventory, current_load,
     
     # Generate AI insights if enabled
     if enable_insights:
-        _display_ai_insights(result, location, forecast_start_dt)
+        optimizer_config = {
+            'min_inventory': min_inventory,
+            'max_inventory': max_inventory,
+            'production_target': production_target,
+            'min_load': 15.6,
+            'max_load': 28.2,
+            'ramp_rate': ramp_rate,
+            'wastewater_frequency': wastewater_frequency,
+            'min_compressors': min_compressors,
+            'allow_pulper_60': True,
+            'allow_pulper_120': True
+        }
+        _display_ai_insights(result, request, optimizer_config)
     
     _display_schedule_sample(result)
     
@@ -273,7 +285,7 @@ def _display_summary(result):
     console.print(table)
 
 
-def _display_ai_insights(result, location: str, forecast_start: datetime):
+def _display_ai_insights(result, request: OptimizationRequest, optimizer_config: dict):
     """Display AI-generated insights about the optimization."""
     console.print()
     
@@ -283,13 +295,13 @@ def _display_ai_insights(result, location: str, forecast_start: datetime):
         console.print("[dim]Set OPENAI_API_KEY environment variable to enable insights[/dim]\n")
         return
     
-    console.print("[cyan]Generating AI insights...[/cyan]")
+    console.print("[cyan]Generating AI insights (analyzing complete schedule)...[/cyan]")
     
     try:
         # Generate insights
         generator = InsightGenerator()
         insights = asyncio.run(
-            generator.generate_insights(result, location, forecast_start)
+            generator.generate_insights(result, request, optimizer_config)
         )
         
         # Display insights
