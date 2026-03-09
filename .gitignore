@@ -26,8 +26,9 @@ env/
 .DS_Store
 Thumbs.db
 
-# Data - exclude raw data files (users will download fresh)
-data/
+# Data - exclude raw market data only (5.3GB, users download via scripts)
+/data/raw/
+/data/weather/
 
 # Outputs
 *.log
