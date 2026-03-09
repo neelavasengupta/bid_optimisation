@@ -33,6 +33,9 @@ Thumbs.db
 # Outputs
 *.log
 
+# Environment variables
+.env
+
 # KEEP these files - required for CLIs to work:
 # - price_prediction/models/price_predictor/ (trained model)
 # - price_prediction/evaluation/ground_truth.csv (historical data)

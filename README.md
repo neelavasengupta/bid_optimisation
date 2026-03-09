@@ -41,7 +41,13 @@ uv run python download_clearing_prices.py  # Required for training
 uv run python download_bid_data.py         # Optional, for analysis
 ```
 
-4. **Navigate to specific project** and follow its README for usage.
+4. **Set up environment variables** (optional, for AI insights):
+```bash
+cp .env.example .env
+# Edit .env and add your OpenAI API key
+```
+
+5. **Navigate to specific project** and follow its README for usage.
 
 ## What's Included vs What You Download
 

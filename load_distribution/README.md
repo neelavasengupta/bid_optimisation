@@ -19,8 +19,9 @@ MILP-based load distribution optimizer for paper mill operations. Integrates wit
 # Install dependencies (includes price prediction engine dependencies)
 uv sync
 
-# Set OpenAI API key for AI insights (optional but recommended)
-export OPENAI_API_KEY="your-api-key-here"
+# Set up environment variables
+cp .env.example .env
+# Edit .env and add your OpenAI API key
 
 # Verify installation
 uv run python -m load_distribution.cli --help
@@ -36,12 +37,23 @@ The optimizer includes AI-powered insights that explain optimization decisions i
 - **Inventory Strategy**: How storage was used to enable load shifting
 - **Risk Considerations**: Potential constraints to monitor
 
-To enable insights, set your OpenAI API key:
+### Setup
+
+1. Copy the example environment file:
 ```bash
-export OPENAI_API_KEY="sk-..."
+cp .env.example .env
 ```
 
-To disable insights:
+2. Add your OpenAI API key to `.env`:
+```bash
+OPENAI_API_KEY=sk-your-api-key-here
+```
+
+Get your API key from: https://platform.openai.com/api-keys
+
+### Usage
+
+AI insights are enabled by default. To disable:
 ```bash
 uv run python -m load_distribution.cli optimize --no-insights ...
 ```

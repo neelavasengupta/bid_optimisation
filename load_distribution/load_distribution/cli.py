@@ -12,10 +12,14 @@ from rich.table import Table
 from rich.panel import Panel
 from rich import box
 from rich.markdown import Markdown
+from dotenv import load_dotenv
 
 from .models import OptimizationRequest, MillState, PriceForecast
 from .optimizer import LoadOptimizer
 from .insights import InsightGenerator
+
+# Load environment variables from .env file
+load_dotenv()
 
 console = Console()
 
