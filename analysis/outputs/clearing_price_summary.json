@@ -1,0 +1,238 @@
+{
+  "overall_stats": {
+    "count": 8201707.0,
+    "mean": 163.30390367761248,
+    "median": 144.47,
+    "std": 177.1582458984839,
+    "min": -139.58,
+    "p25": 9.98,
+    "p75": 259.32,
+    "max": 10541.02
+  },
+  "hourly_pattern": [
+    {
+      "hour": 0,
+      "mean_price": 132.46942878074123,
+      "median_price": 101.3,
+      "std_price": 144.72486661120902
+    },
+    {
+      "hour": 1,
+      "mean_price": 130.25456486806866,
+      "median_price": 96.82,
+      "std_price": 146.43704072504318
+    },
+    {
+      "hour": 2,
+      "mean_price": 127.0655179488978,
+      "median_price": 84.27,
+      "std_price": 145.481548020547
+    },
+    {
+      "hour": 3,
+      "mean_price": 123.8216591258498,
+      "median_price": 70.625,
+      "std_price": 145.33845296425233
+    },
+    {
+      "hour": 4,
+      "mean_price": 140.64750152823802,
+      "median_price": 108.65,
+      "std_price": 151.8660772655525
+    },
+    {
+      "hour": 5,
+      "mean_price": 175.0538330732044,
+      "median_price": 162.76,
+      "std_price": 165.21728983325207
+    },
+    {
+      "hour": 6,
+      "mean_price": 203.9982730784991,
+      "median_price": 194.59,
+      "std_price": 188.30788415739076
+    },
+    {
+      "hour": 7,
+      "mean_price": 214.80226937668428,
+      "median_price": 189.35,
+      "std_price": 271.1518299852356
+    },
+    {
+      "hour": 8,
+      "mean_price": 183.1052902629933,
+      "median_price": 159.44,
+      "std_price": 259.8333007141508
+    },
+    {
+      "hour": 9,
+      "mean_price": 159.2675473347012,
+      "median_price": 135.6,
+      "std_price": 169.8950909188921
+    },
+    {
+      "hour": 10,
+      "mean_price": 156.8611378989393,
+      "median_price": 141.06,
+      "std_price": 149.40542707442074
+    },
+    {
+      "hour": 11,
+      "mean_price": 159.11908099993474,
+      "median_price": 142.82,
+      "std_price": 153.6568810708882
+    },
+    {
+      "hour": 12,
+      "mean_price": 157.35960764415893,
+      "median_price": 138.53,
+      "std_price": 160.38531887524573
+    },
+    {
+      "hour": 13,
+      "mean_price": 151.70022149816174,
+      "median_price": 135.01,
+      "std_price": 144.9129561703456
+    },
+    {
+      "hour": 14,
+      "mean_price": 157.4541924199615,
+      "median_price": 142.79,
+      "std_price": 147.4361982646521
+    },
+    {
+      "hour": 15,
+      "mean_price": 181.30576645301207,
+      "median_price": 167.72,
+      "std_price": 163.71938690697598
+    },
+    {
+      "hour": 16,
+      "mean_price": 200.21840455132664,
+      "median_price": 188.85,
+      "std_price": 177.11632808344885
+    },
+    {
+      "hour": 17,
+      "mean_price": 220.6788425925926,
+      "median_price": 198.2,
+      "std_price": 231.59363075549933
+    },
+    {
+      "hour": 18,
+      "mean_price": 190.8469728243079,
+      "median_price": 168.54,
+      "std_price": 233.64218292587114
+    },
+    {
+      "hour": 19,
+      "mean_price": 166.3524395283857,
+      "median_price": 148.3,
+      "std_price": 165.0777522569175
+    },
+    {
+      "hour": 20,
+      "mean_price": 158.80779268378228,
+      "median_price": 140.49,
+      "std_price": 148.4608674241844
+    },
+    {
+      "hour": 21,
+      "mean_price": 161.5194722982136,
+      "median_price": 147.3,
+      "std_price": 149.58717633822326
+    },
+    {
+      "hour": 22,
+      "mean_price": 133.4573846531557,
+      "median_price": 107.62,
+      "std_price": 142.5456569189275
+    },
+    {
+      "hour": 23,
+      "mean_price": 132.97739933863866,
+      "median_price": 105.56,
+      "std_price": 147.4691735750231
+    }
+  ],
+  "dow_pattern": [
+    {
+      "day_of_week": 1,
+      "mean_price": 167.35427417233072
+    },
+    {
+      "day_of_week": 2,
+      "mean_price": 174.4817295881883
+    },
+    {
+      "day_of_week": 3,
+      "mean_price": 178.54222991578817
+    },
+    {
+      "day_of_week": 4,
+      "mean_price": 170.146825427634
+    },
+    {
+      "day_of_week": 5,
+      "mean_price": 162.0936925288798
+    },
+    {
+      "day_of_week": 6,
+      "mean_price": 145.3895137761975
+    },
+    {
+      "day_of_week": 7,
+      "mean_price": 145.16885297639502
+    }
+  ],
+  "monthly_pattern": [
+    {
+      "month": 1,
+      "mean_price": 59.15194011194148
+    },
+    {
+      "month": 2,
+      "mean_price": 153.71521705235347
+    },
+    {
+      "month": 3,
+      "mean_price": 245.6356860846616
+    },
+    {
+      "month": 4,
+      "mean_price": 271.75691546165973
+    },
+    {
+      "month": 5,
+      "mean_price": 250.98751994805633
+    },
+    {
+      "month": 6,
+      "mean_price": 191.51051307179443
+    },
+    {
+      "month": 7,
+      "mean_price": 234.32764223162698
+    },
+    {
+      "month": 8,
+      "mean_price": 320.43886689307345
+    },
+    {
+      "month": 9,
+      "mean_price": 101.5035640157797
+    },
+    {
+      "month": 10,
+      "mean_price": 40.435104743689415
+    },
+    {
+      "month": 11,
+      "mean_price": 45.61278296242826
+    },
+    {
+      "month": 12,
+      "mean_price": 20.982248157065627
+    }
+  ]
+}
