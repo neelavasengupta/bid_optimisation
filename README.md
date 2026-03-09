@@ -10,32 +10,49 @@ Energy market bid optimisation and price prediction system.
 
 ## Getting Started
 
-Each subdirectory contains its own README with specific setup and usage instructions.
-
 ### Prerequisites
 
 - Python 3.11+
 - uv (Python package manager)
+- Git LFS (for model files)
 
 ### Installation
 
-Navigate to the specific project directory and follow its README instructions.
-
-## Data Setup
-
-**Data files are NOT included in this repository** (5.3GB excluded to keep repo lightweight).
-
-To download data:
-
+1. **Install Git LFS** (one-time setup per machine):
 ```bash
-# Download clearing prices (required for price prediction)
-cd price_prediction
-uv run python download_clearing_prices.py
-
-# Download bid data (optional, for analysis)
-uv run python download_bid_data.py
+git lfs install
 ```
 
-This will download ~5GB of data from the NZ Electricity Market (EMI) public API.
+2. **Clone the repository**:
+```bash
+git clone https://github.com/neelavasengupta/bid_optimisation.git
+cd bid_optimisation
+```
 
-**Note**: Weather data must be obtained separately (not automated).
+Git LFS will automatically download:
+- Trained ML models (721MB) - required for price prediction
+- Evaluation data (927MB) - required for both CLIs
+- Analysis outputs and figures
+
+3. **Download market data** (5.3GB, not in repo):
+```bash
+cd price_prediction
+uv run python download_clearing_prices.py  # Required for training
+uv run python download_bid_data.py         # Optional, for analysis
+```
+
+4. **Navigate to specific project** and follow its README for usage.
+
+## What's Included vs What You Download
+
+**In the repo (via Git LFS):**
+- Trained models ready to use
+- Evaluation datasets
+- Sample predictions
+- Analysis outputs
+
+**You download separately:**
+- Raw market data from NZ Electricity Market API (5.3GB)
+- Weather data (manual process)
+
+This means you can run the prediction and optimization CLIs immediately after cloning!
