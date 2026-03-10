@@ -4,31 +4,30 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
-from pydantic_ai.models.anthropic import AnthropicModel
 
 
 class OptimizationInsight(BaseModel):
-    """Structured insights from optimization results."""
+    """Structured insights from optimization recommendations."""
     
     executive_summary: str = Field(
-        description="2-3 sentence summary of the optimization strategy and key results"
+        description="2-3 sentence summary of the RECOMMENDED optimization strategy and PROJECTED results"
     )
     
     key_decisions: List[str] = Field(
-        description="3-5 bullet points explaining the most important decisions that drove savings"
+        description="3-5 bullet points explaining the most important RECOMMENDED decisions that would drive savings"
     )
     
     price_strategy: str = Field(
-        description="How the optimizer exploited price patterns (peak avoidance, valley loading, etc.)"
+        description="How the optimizer PROPOSES to exploit price patterns (peak avoidance, valley loading, etc.)"
     )
     
     inventory_strategy: str = Field(
-        description="How inventory was used as a buffer to enable load shifting"
+        description="How inventory SHOULD BE used as a buffer to enable load shifting"
     )
     
     risk_considerations: Optional[List[str]] = Field(
         default=None,
-        description="Potential risks or tight constraints to monitor (optional)"
+        description="Potential risks or tight constraints to monitor IF THIS STRATEGY IS IMPLEMENTED (optional)"
     )
 
 
@@ -41,19 +40,14 @@ def _load_system_prompt() -> str:
 class InsightGenerator:
     """Generate natural language insights from optimization results using Claude."""
     
-    def __init__(self, api_key: Optional[str] = None):
-        """
-        Initialize insight generator.
-        
-        Args:
-            api_key: Anthropic API key. If None, will use ANTHROPIC_API_KEY env var
-        """
-        model = AnthropicModel('claude-3-5-sonnet-20241022', api_key=api_key)
+    def __init__(self):
+        """Initialize insight generator with Claude 3.5 Sonnet."""
+        # AnthropicModel reads API key from ANTHROPIC_API_KEY env var automatically
         system_prompt = _load_system_prompt()
         
         self.agent = Agent(
-            model=model,
-            result_type=OptimizationInsight,
+            model='anthropic:claude-sonnet-4-5',
+            output_type=OptimizationInsight,
             system_prompt=system_prompt
         )
     
@@ -68,5 +62,5 @@ class InsightGenerator:
             Structured insights
         """
         result_obj = await self.agent.run(context)
-        return result_obj.data
+        return result_obj.output
 

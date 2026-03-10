@@ -29,7 +29,7 @@ uv run python -m load_distribution.cli --help
 
 ## AI Insights
 
-The optimizer includes AI-powered insights using Claude 3.5 Sonnet that explain optimization decisions in natural language:
+The optimizer includes optional AI-powered insights using Claude Sonnet 4.5 that explain optimization decisions in natural language:
 
 - **Executive Summary**: High-level overview of the strategy
 - **Key Decisions**: Specific equipment scheduling choices that drove savings
@@ -53,9 +53,9 @@ Get your key from: https://console.anthropic.com/settings/keys
 
 ### Usage
 
-AI insights are enabled by default. To disable:
+AI insights are OFF by default. To enable:
 ```bash
-uv run python -m load_distribution.cli optimize --no-insights ...
+uv run python -m load_distribution.cli optimize --ai-insights ...
 ```
 
 ## Quick Start
@@ -67,7 +67,8 @@ uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
   --date 2024-03-20 \
   --time 06:00 \
-  --forecast-horizon 24
+  --forecast-horizon 24 \
+  --ai-insights
 ```
 
 The system will:
@@ -90,14 +91,22 @@ The system will:
 - `--time` - Start time (HH:MM), default: 00:00
 - `--forecast-horizon` - Hours to forecast (1-168), default: 48
 
-### Current State
+### Initial Conditions
 - `--current-inventory` - Current inventory level (hours), default: 5.0
 - `--current-load` - Current load (MW), default: 22.8
+- `--production-today` - Production so far today (tons), default: 0.0
+- `--current-pulper-speed` - Current pulper speed (60, 100, or 120), default: 100
 
 ### Production Constraints
 - `--production-target` - Daily production target (tons), default: 500.0
 - `--min-inventory` - Minimum inventory (hours), default: 2.0
 - `--max-inventory` - Maximum inventory (hours), default: 8.0
+- `--ramp-rate` - Maximum load change rate (MW/min), default: 0.5
+- `--wastewater-frequency` - Wastewater must run every N hours, default: 4
+- `--min-compressors` - Minimum compressors that must be ON, default: 1
+
+### AI Insights
+- `--ai-insights` - Enable AI-powered insights using Claude (requires ANTHROPIC_API_KEY)
 
 ### Operational Constraints
 - `--ramp-rate` - Max load change rate (MW/min), default: 0.5
