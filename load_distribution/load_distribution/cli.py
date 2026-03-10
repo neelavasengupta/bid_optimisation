@@ -49,38 +49,37 @@ def cli():
 @cli.command()
 @click.option('--location', type=str, required=True,
               help='Location ID (e.g., HAY2201)')
-@click.option('--date', type=str, default='2024-03-07', show_default=True,
-              help='Forecast start date (YYYY-MM-DD)')
-@click.option('--time', type=str, default='00:00', show_default=True,
-              help='Forecast start time (HH:MM)')
-@click.option('--current-inventory', type=float, default=5.0, show_default=True,
+@click.option('--forecast-start', type=click.DateTime(formats=['%Y-%m-%d %H:%M', '%Y-%m-%d']),
+              default='2024-03-07 00:00', show_default=True,
+              help='Forecast start date and time (YYYY-MM-DD HH:MM or YYYY-MM-DD)')
+@click.option('--current-inventory', type=click.FloatRange(2.0, 8.0), default=5.0, show_default=True,
               help='Current inventory level (hours)')
-@click.option('--current-load', type=float, default=22.8, show_default=True,
+@click.option('--current-load', type=click.FloatRange(15.6, 28.2), default=22.8, show_default=True,
               help='Current load (MW) - affects ramp rate constraint')
-@click.option('--production-today', type=float, default=0.0, show_default=True,
+@click.option('--production-today', type=click.FloatRange(min=0.0), default=0.0, show_default=True,
               help='Production so far today (tons)')
-@click.option('--current-pulper-speed', type=int, default=100, show_default=True,
-              help='Current pulper speed (60, 100, or 120)')
-@click.option('--forecast-horizon', type=int, default=48, show_default=True,
+@click.option('--current-pulper-speed', type=click.Choice(['60', '100', '120']), default='100', show_default=True,
+              help='Current pulper speed')
+@click.option('--forecast-horizon', type=click.IntRange(1, 168), default=48, show_default=True,
               help='Forecast horizon (hours)')
-@click.option('--output', type=click.Path(), default=None,
+@click.option('--output', type=click.Path(dir_okay=False, writable=True), default=None,
               help='Output CSV file path (optional)')
 # Configurable constraints
-@click.option('--min-inventory', type=float, default=2.0, show_default=True,
+@click.option('--min-inventory', type=click.FloatRange(0.0, 8.0), default=2.0, show_default=True,
               help='Minimum inventory level (hours) - safety buffer')
-@click.option('--max-inventory', type=float, default=8.0, show_default=True,
+@click.option('--max-inventory', type=click.FloatRange(2.0, 10.0), default=8.0, show_default=True,
               help='Maximum inventory level (hours) - tank capacity')
-@click.option('--production-target', type=float, default=500.0, show_default=True,
+@click.option('--production-target', type=click.FloatRange(0.0, 600.0), default=500.0, show_default=True,
               help='Daily production target (tons) - affects minimum pulper speed')
-@click.option('--ramp-rate', type=float, default=0.5, show_default=True,
+@click.option('--ramp-rate', type=click.FloatRange(min=0.1), default=0.5, show_default=True,
               help='Maximum load change rate (MW/min) - grid stability')
-@click.option('--wastewater-frequency', type=int, default=4, show_default=True,
+@click.option('--wastewater-frequency', type=click.IntRange(min=1), default=4, show_default=True,
               help='Wastewater must run every N hours - environmental compliance')
-@click.option('--min-compressors', type=int, default=1, show_default=True,
+@click.option('--min-compressors', type=click.IntRange(1, 3), default=1, show_default=True,
               help='Minimum compressors that must be ON - process requirements')
 @click.option('--ai-insights', is_flag=True, default=False,
               help='Generate AI-powered insights using Claude (requires ANTHROPIC_API_KEY)')
-def optimize(location, date, time, current_inventory, current_load,
+def optimize(location, forecast_start, current_inventory, current_load,
              production_today, current_pulper_speed, forecast_horizon, output,
              min_inventory, max_inventory, production_target,
              ramp_rate, wastewater_frequency, min_compressors,
@@ -91,17 +90,12 @@ def optimize(location, date, time, current_inventory, current_load,
     console.print(Rule("[bold cyan]Paper Mill Load Optimization[/bold cyan]", style="cyan"))
     console.print()
     
-    # Parse forecast start time
-    date_str = f"{date} {time}"
-    try:
-        forecast_start_dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M")
-    except ValueError:
-        console.print("[red]✗ Invalid date/time format. Use: YYYY-MM-DD for date, HH:MM for time[/red]")
-        return
+    # Convert string to int for pulper speed
+    current_pulper_speed = int(current_pulper_speed)
     
     # Display all inputs
     _display_inputs_and_config(
-        location, forecast_start_dt, forecast_horizon,
+        location, forecast_start, forecast_horizon,
         current_inventory, current_load, production_today, current_pulper_speed,
         min_inventory, max_inventory, production_target,
         ramp_rate, wastewater_frequency, min_compressors
@@ -118,7 +112,7 @@ def optimize(location, date, time, current_inventory, current_load,
     try:
         # Call price prediction engine with fixed context_days
         df_loc = predict_prices(
-            forecast_start=forecast_start_dt,
+            forecast_start=forecast_start,
             forecast_hours=forecast_horizon,
             locations=[location],
             context_days=60  # Fixed at 60 days
@@ -134,7 +128,7 @@ def optimize(location, date, time, current_inventory, current_load,
     
     # Create mill state
     mill_state = MillState(
-        timestamp=forecast_start_dt,
+        timestamp=forecast_start,
         inventory_level=current_inventory,
         current_load=current_load,
         production_today=production_today,

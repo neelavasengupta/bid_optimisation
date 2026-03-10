@@ -4,6 +4,7 @@ import time
 from typing import List, Tuple
 from datetime import timedelta
 import pulp as pl
+from pydantic import BaseModel, Field, field_validator
 
 from .models import (
     OptimizationRequest, OptimizationResult, SchedulePeriod,
@@ -12,41 +13,34 @@ from .models import (
 from .config import MILL_CONFIG, OPTIMIZATION_CONFIG
 
 
-class LoadOptimizer:
+from pydantic import BaseModel, Field, field_validator
+
+
+class LoadOptimizer(BaseModel):
     """MILP-based load distribution optimizer."""
     
-    def __init__(
-        self,
-        min_inventory: float = 2.0,
-        max_inventory: float = 8.0,
-        production_target: float = 500.0,
-        ramp_rate: float = 0.5,
-        wastewater_frequency: int = 4,
-        min_compressors: int = 1
-    ):
-        """
-        Initialize optimizer with configurable constraints.
-        
-        Args:
-            min_inventory: Minimum inventory level (hours) - safety buffer
-            max_inventory: Maximum inventory level (hours) - tank capacity
-            production_target: Daily production target (tons) - affects minimum pulper speed
-            ramp_rate: Maximum load change rate (MW/min) - grid stability
-            wastewater_frequency: Wastewater must run every N hours - environmental compliance
-            min_compressors: Minimum compressors that must be ON - process requirements
-        """
-        self.min_inventory = min_inventory
-        self.max_inventory = max_inventory
-        self.production_target = production_target
-        self.ramp_rate = ramp_rate
-        self.wastewater_frequency = wastewater_frequency
-        self.min_compressors = min_compressors
-        
-        # Load base config for constants
-        self.config = MILL_CONFIG
-        self.opt_config = OPTIMIZATION_CONFIG
-        self.min_load = MILL_CONFIG["min_load"]
-        self.max_load = MILL_CONFIG["max_load"]
+    model_config = {"arbitrary_types_allowed": True}
+    
+    min_inventory: float = Field(default=2.0, ge=0.0, le=8.0, description="Minimum inventory level (hours)")
+    max_inventory: float = Field(default=8.0, ge=2.0, le=10.0, description="Maximum inventory level (hours)")
+    production_target: float = Field(default=500.0, ge=0.0, le=600.0, description="Daily production target (tons)")
+    ramp_rate: float = Field(default=0.5, gt=0.0, description="Maximum load change rate (MW/min)")
+    wastewater_frequency: int = Field(default=4, ge=1, description="Wastewater must run every N hours")
+    min_compressors: int = Field(default=1, ge=1, le=3, description="Minimum compressors that must be ON")
+    
+    # Loaded from config
+    config: dict = Field(default_factory=lambda: MILL_CONFIG, exclude=True)
+    opt_config: dict = Field(default_factory=lambda: OPTIMIZATION_CONFIG, exclude=True)
+    min_load: float = Field(default_factory=lambda: MILL_CONFIG["min_load"], exclude=True)
+    max_load: float = Field(default_factory=lambda: MILL_CONFIG["max_load"], exclude=True)
+    
+    @field_validator('max_inventory')
+    @classmethod
+    def validate_inventory_range(cls, v, info):
+        """Ensure max_inventory > min_inventory."""
+        if 'min_inventory' in info.data and v <= info.data['min_inventory']:
+            raise ValueError(f"max_inventory ({v}) must be greater than min_inventory ({info.data['min_inventory']})")
+        return v
     
     def optimize(self, request: OptimizationRequest) -> OptimizationResult:
         """
