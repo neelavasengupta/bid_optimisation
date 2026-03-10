@@ -65,8 +65,7 @@ Basic optimization with integrated price forecasting:
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --date 2024-03-20 \
-  --time 06:00 \
+  --forecast-start "2024-03-20 06:00" \
   --forecast-horizon 24 \
   --ai-insights
 ```
@@ -87,8 +86,7 @@ The system will:
 - `--location` - Location ID (e.g., HAY2201, BEN2201, OTA2201)
 
 ### Forecasting
-- `--date` - Start date (YYYY-MM-DD), default: 2024-03-07
-- `--time` - Start time (HH:MM), default: 00:00
+- `--forecast-start` - Start date and time (YYYY-MM-DD HH:MM or YYYY-MM-DD), default: 2024-03-07 00:00
 - `--forecast-horizon` - Hours to forecast (1-168), default: 48
 
 ### Initial Conditions
@@ -128,8 +126,7 @@ All demos use **2024-03-20 06:00** which provides good price variation ($242-270
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --date 2024-03-20 \
-  --time 06:00 \
+  --forecast-start "2024-03-20 06:00" \
   --forecast-horizon 24
 ```
 **Result**: ~10% savings, moderate flexibility
@@ -138,8 +135,7 @@ uv run python -m load_distribution.cli optimize \
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --date 2024-03-20 \
-  --time 06:00 \
+  --forecast-start "2024-03-20 06:00" \
   --forecast-horizon 24 \
   --production-target 300
 ```
@@ -149,8 +145,7 @@ uv run python -m load_distribution.cli optimize \
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --date 2024-03-20 \
-  --time 06:00 \
+  --forecast-start "2024-03-20 06:00" \
   --forecast-horizon 24 \
   --production-target 300 \
   --max-inventory 12.0
@@ -161,8 +156,7 @@ uv run python -m load_distribution.cli optimize \
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --date 2024-03-20 \
-  --time 06:00 \
+  --forecast-start "2024-03-20 06:00" \
   --forecast-horizon 24 \
   --min-inventory 4.0 \
   --max-inventory 6.0 \
@@ -174,8 +168,7 @@ uv run python -m load_distribution.cli optimize \
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --date 2024-03-20 \
-  --time 06:00 \
+  --forecast-start "2024-03-20 06:00" \
   --forecast-horizon 24 \
   --production-target 300 \
   --ramp-rate 1.0
@@ -186,8 +179,7 @@ uv run python -m load_distribution.cli optimize \
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --date 2024-03-20 \
-  --time 06:00 \
+  --forecast-start "2024-03-20 06:00" \
   --forecast-horizon 24 \
   --wastewater-frequency 2
 ```
@@ -197,8 +189,7 @@ uv run python -m load_distribution.cli optimize \
 ```bash
 uv run python -m load_distribution.cli optimize \
   --location HAY2201 \
-  --date 2024-03-20 \
-  --time 06:00 \
+  --forecast-start "2024-03-20 06:00" \
   --forecast-horizon 24 \
   --production-target 300 \
   --min-inventory 1.0 \
