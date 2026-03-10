@@ -20,13 +20,9 @@ class LoadOptimizer:
         min_inventory: float = 2.0,
         max_inventory: float = 8.0,
         production_target: float = 500.0,
-        min_load: float = 15.6,
-        max_load: float = 28.2,
         ramp_rate: float = 0.5,
         wastewater_frequency: int = 4,
-        min_compressors: int = 1,
-        allow_pulper_60: bool = True,
-        allow_pulper_120: bool = True
+        min_compressors: int = 1
     ):
         """
         Initialize optimizer with configurable constraints.
@@ -35,28 +31,22 @@ class LoadOptimizer:
             min_inventory: Minimum inventory level (hours) - safety buffer
             max_inventory: Maximum inventory level (hours) - tank capacity
             production_target: Daily production target (tons) - affects minimum pulper speed
-            min_load: Minimum mill load (MW) - equipment constraints
-            max_load: Maximum mill load (MW) - equipment capacity
             ramp_rate: Maximum load change rate (MW/min) - grid stability
             wastewater_frequency: Wastewater must run every N hours - environmental compliance
             min_compressors: Minimum compressors that must be ON - process requirements
-            allow_pulper_60: Allow 60% pulper speed - conservation mode
-            allow_pulper_120: Allow 120% pulper speed - high production mode
         """
         self.min_inventory = min_inventory
         self.max_inventory = max_inventory
         self.production_target = production_target
-        self.min_load = min_load
-        self.max_load = max_load
         self.ramp_rate = ramp_rate
         self.wastewater_frequency = wastewater_frequency
         self.min_compressors = min_compressors
-        self.allow_pulper_60 = allow_pulper_60
-        self.allow_pulper_120 = allow_pulper_120
         
         # Load base config for constants
         self.config = MILL_CONFIG
         self.opt_config = OPTIMIZATION_CONFIG
+        self.min_load = MILL_CONFIG["min_load"]
+        self.max_load = MILL_CONFIG["max_load"]
     
     def optimize(self, request: OptimizationRequest) -> OptimizationResult:
         """
@@ -83,15 +73,11 @@ class LoadOptimizer:
         T = range(n_periods)
         
         # Decision variables
-        # Determine pulper speed bounds based on allowed modes
-        pulper_min = 60 if self.allow_pulper_60 else 100
-        pulper_max = 120 if self.allow_pulper_120 else 100
-        
         pulper_speed = pl.LpVariable.dicts(
             "pulper_speed", T,
             cat='Integer',
-            lowBound=pulper_min,
-            upBound=pulper_max
+            lowBound=60,
+            upBound=120
         )
         
         compressor_1 = pl.LpVariable.dicts("c1", T, cat='Binary')
@@ -132,44 +118,14 @@ class LoadOptimizer:
         
         # Constraints
         for t in T:
-            # Speed selection: exactly one speed must be chosen (only from allowed speeds)
-            if self.allow_pulper_60 and self.allow_pulper_120:
-                # All three speeds allowed
-                prob += speed_60[t] + speed_100[t] + speed_120[t] == 1, f"Speed_Selection_{t}"
-                prob += pulper_speed[t] == 60 * speed_60[t] + 100 * speed_100[t] + 120 * speed_120[t], \
-                        f"Speed_Value_{t}"
-                prob += pulper_power[t] == (
-                    pulper_power_map[60] * speed_60[t] +
-                    pulper_power_map[100] * speed_100[t] +
-                    pulper_power_map[120] * speed_120[t]
-                ), f"Pulper_Power_{t}"
-            elif self.allow_pulper_60 and not self.allow_pulper_120:
-                # Only 60% and 100% allowed
-                prob += speed_60[t] + speed_100[t] == 1, f"Speed_Selection_{t}"
-                prob += speed_120[t] == 0, f"Speed_120_Disabled_{t}"
-                prob += pulper_speed[t] == 60 * speed_60[t] + 100 * speed_100[t], \
-                        f"Speed_Value_{t}"
-                prob += pulper_power[t] == (
-                    pulper_power_map[60] * speed_60[t] +
-                    pulper_power_map[100] * speed_100[t]
-                ), f"Pulper_Power_{t}"
-            elif not self.allow_pulper_60 and self.allow_pulper_120:
-                # Only 100% and 120% allowed
-                prob += speed_100[t] + speed_120[t] == 1, f"Speed_Selection_{t}"
-                prob += speed_60[t] == 0, f"Speed_60_Disabled_{t}"
-                prob += pulper_speed[t] == 100 * speed_100[t] + 120 * speed_120[t], \
-                        f"Speed_Value_{t}"
-                prob += pulper_power[t] == (
-                    pulper_power_map[100] * speed_100[t] +
-                    pulper_power_map[120] * speed_120[t]
-                ), f"Pulper_Power_{t}"
-            else:
-                # Only 100% allowed (both 60% and 120% disabled)
-                prob += speed_100[t] == 1, f"Speed_Selection_{t}"
-                prob += speed_60[t] == 0, f"Speed_60_Disabled_{t}"
-                prob += speed_120[t] == 0, f"Speed_120_Disabled_{t}"
-                prob += pulper_speed[t] == 100, f"Speed_Value_{t}"
-                prob += pulper_power[t] == pulper_power_map[100], f"Pulper_Power_{t}"
+            # Speed selection: exactly one of 60%, 100%, or 120%
+            prob += speed_60[t] + speed_100[t] + speed_120[t] == 1, f"Speed_Selection_{t}"
+            prob += pulper_speed[t] == 60 * speed_60[t] + 100 * speed_100[t] + 120 * speed_120[t], f"Speed_Value_{t}"
+            prob += pulper_power[t] == (
+                pulper_power_map[60] * speed_60[t] +
+                pulper_power_map[100] * speed_100[t] +
+                pulper_power_map[120] * speed_120[t]
+            ), f"Pulper_Power_{t}"
             
             # Total load calculation
             prob += load[t] == (
@@ -219,11 +175,10 @@ class LoadOptimizer:
                 "Production_Target"
         
         # Validate constraints before solving
-        max_production = 600.0 if self.allow_pulper_120 else 500.0
-        if self.production_target > max_production:
+        if self.production_target > 600.0:
             raise ValueError(
                 f"Production target {self.production_target} tons/day exceeds maximum capacity "
-                f"{max_production} tons/day (pulper max speed: {pulper_max}%)"
+                f"600.0 tons/day (pulper max speed: 120%)"
             )
         
         # Solve
@@ -312,14 +267,9 @@ class LoadOptimizer:
     
     def _calculate_baseline_cost(self, prices: List[float], n_periods: int) -> float:
         """Calculate baseline cost at constant 22.8 MW load."""
-        return sum(prices[t] * 22.8 * 0.5 for t in range(n_periods))
+        return sum(prices) * 22.8 * 0.5
     
     def _calculate_production(self, schedule: List[SchedulePeriod]) -> float:
         """Calculate total production in tons."""
-        # Simplified: 1 MW-hour of pulp production ≈ 10 tons
-        # This is a placeholder - actual conversion depends on mill specifics
-        total_mwh = sum(
-            s.equipment.pulp_production_rate() * 0.5
-            for s in schedule
-        )
-        return total_mwh * 10  # tons
+        # 1 MW-hour of pulp production ≈ 10 tons (mill-specific conversion)
+        return sum(s.equipment.pulp_production_rate() * 0.5 for s in schedule) * 10

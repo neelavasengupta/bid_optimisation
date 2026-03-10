@@ -52,23 +52,26 @@ class EquipmentSettings(BaseModel):
     
     def total_load(self) -> float:
         """Calculate total mill load for these settings."""
+        from .config import MILL_CONFIG
+        
         # Paper machines + critical (constant)
-        load = 12.0 + 1.3
+        load = MILL_CONFIG["paper_machines"] + MILL_CONFIG["critical_systems"]
         
         # Pulper (cubic law)
-        load += 6.0 * (self.pulper_speed / 100) ** 3
+        load += MILL_CONFIG["pulper_base"] * (self.pulper_speed / 100) ** 3
         
         # Compressors
-        load += sum([self.compressor_1, self.compressor_2, self.compressor_3]) * 1.0
+        load += sum([self.compressor_1, self.compressor_2, self.compressor_3]) * MILL_CONFIG["compressor_unit"]
         
         # Wastewater
-        load += 1.5 if self.wastewater_pump else 0.0
+        load += MILL_CONFIG["wastewater"] if self.wastewater_pump else 0.0
         
         return load
     
     def pulp_production_rate(self) -> float:
         """Calculate pulp production rate (MW equivalent)."""
-        return 5.0 * (self.pulper_speed / 100)
+        from .config import MILL_CONFIG
+        return MILL_CONFIG["pulp_consumption_rate"] * (self.pulper_speed / 100)
 
 
 class SchedulePeriod(BaseModel):
