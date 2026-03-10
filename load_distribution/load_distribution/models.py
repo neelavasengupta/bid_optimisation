@@ -18,8 +18,8 @@ class MillState(BaseModel):
     @field_validator('current_pulper_speed')
     @classmethod
     def validate_pulper_speed(cls, v):
-        if v not in [60, 100, 120]:
-            raise ValueError(f"Pulper speed must be 60, 100, or 120, got {v}")
+        if v not in [0, 60, 100, 120]:
+            raise ValueError(f"Pulper speed must be 0, 60, 100, or 120, got {v}")
         return v
 
 
@@ -46,8 +46,8 @@ class EquipmentSettings(BaseModel):
     @field_validator('pulper_speed')
     @classmethod
     def validate_pulper_speed(cls, v):
-        if v not in [60, 100, 120]:
-            raise ValueError(f"Pulper speed must be 60, 100, or 120, got {v}")
+        if v not in [0, 60, 100, 120]:
+            raise ValueError(f"Pulper speed must be 0, 60, 100, or 120, got {v}")
         return v
     
     def total_load(self) -> float:

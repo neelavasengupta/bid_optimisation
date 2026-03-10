@@ -23,7 +23,7 @@ class LoadOptimizer(BaseModel):
     
     min_inventory: float = Field(default=2.0, ge=0.0, le=8.0, description="Minimum inventory level (hours)")
     max_inventory: float = Field(default=8.0, ge=2.0, le=10.0, description="Maximum inventory level (hours)")
-    production_target: float = Field(default=500.0, ge=0.0, le=600.0, description="Daily production target (tons)")
+    production_target: float = Field(default=250.0, ge=0.0, description="Total production target for forecast period (tons)")
     ramp_rate: float = Field(default=0.5, gt=0.0, description="Maximum load change rate (MW/min)")
     wastewater_frequency: int = Field(default=4, ge=1, description="Wastewater must run every N hours")
     min_compressors: int = Field(default=1, ge=1, le=3, description="Minimum compressors that must be ON")
@@ -70,7 +70,7 @@ class LoadOptimizer(BaseModel):
         pulper_speed = pl.LpVariable.dicts(
             "pulper_speed", T,
             cat='Integer',
-            lowBound=60,
+            lowBound=0,
             upBound=120
         )
         
@@ -80,16 +80,18 @@ class LoadOptimizer(BaseModel):
         wastewater = pl.LpVariable.dicts("ww", T, cat='Binary')
         
         # Auxiliary variables for cubic law (linearization)
-        # Since pulper_speed ∈ {60, 100, 120}, we use binary indicators
+        # Since pulper_speed ∈ {0, 60, 100, 120}, we use binary indicators
+        speed_0 = pl.LpVariable.dicts("s0", T, cat='Binary')
         speed_60 = pl.LpVariable.dicts("s60", T, cat='Binary')
         speed_100 = pl.LpVariable.dicts("s100", T, cat='Binary')
         speed_120 = pl.LpVariable.dicts("s120", T, cat='Binary')
         
         # Pulper power for each speed option
         pulper_power_map = {
-            60: 6.0 * (0.6 ** 3),   # 1.296 MW
-            100: 6.0 * (1.0 ** 3),  # 6.0 MW
-            120: 6.0 * (1.2 ** 3),  # 10.368 MW
+            0: 0.0,                     # OFF
+            60: 6.0 * (0.6 ** 3),       # 1.296 MW
+            100: 6.0 * (1.0 ** 3),      # 6.0 MW
+            120: 6.0 * (1.2 ** 3),      # 10.368 MW
         }
         
         pulper_power = pl.LpVariable.dicts("pulper_power", T, lowBound=0)
@@ -112,10 +114,11 @@ class LoadOptimizer(BaseModel):
         
         # Constraints
         for t in T:
-            # Speed selection: exactly one of 60%, 100%, or 120%
-            prob += speed_60[t] + speed_100[t] + speed_120[t] == 1, f"Speed_Selection_{t}"
-            prob += pulper_speed[t] == 60 * speed_60[t] + 100 * speed_100[t] + 120 * speed_120[t], f"Speed_Value_{t}"
+            # Speed selection: exactly one of 0%, 60%, 100%, or 120%
+            prob += speed_0[t] + speed_60[t] + speed_100[t] + speed_120[t] == 1, f"Speed_Selection_{t}"
+            prob += pulper_speed[t] == 0 * speed_0[t] + 60 * speed_60[t] + 100 * speed_100[t] + 120 * speed_120[t], f"Speed_Value_{t}"
             prob += pulper_power[t] == (
+                pulper_power_map[0] * speed_0[t] +
                 pulper_power_map[60] * speed_60[t] +
                 pulper_power_map[100] * speed_100[t] +
                 pulper_power_map[120] * speed_120[t]
@@ -162,17 +165,19 @@ class LoadOptimizer(BaseModel):
             prob += pl.lpSum([wastewater[t] for t in range(k, k + periods_per_cycle)]) >= 1, \
                     f"Wastewater_Frequency_{k}"
         
-        # Production target: average speed should achieve target tons/day
-        # Simplified: average pulper speed >= (production_target / 500) * 100
-        min_avg_speed = (self.production_target / 500.0) * 100
-        prob += pl.lpSum([pulper_speed[t] for t in T]) >= min_avg_speed * n_periods, \
+        # Production target: total production must meet target
+        # Production rate: pulper_speed/100 * 5.0 MW * 0.5h * 10 tons/MWh = tons per period
+        # Simplified: pulper_speed * 0.25 = tons per period
+        prob += pl.lpSum([pulper_speed[t] * 0.25 for t in T]) >= self.production_target, \
                 "Production_Target"
         
-        # Validate constraints before solving
-        if self.production_target > 600.0:
+        # Calculate maximum possible production for validation
+        max_production = n_periods * 120 * 0.25  # All periods at 120%
+        if self.production_target > max_production:
             raise ValueError(
-                f"Production target {self.production_target} tons/day exceeds maximum capacity "
-                f"600.0 tons/day (pulper max speed: 120%)"
+                f"Production target {self.production_target} tons exceeds maximum capacity "
+                f"{max_production:.1f} tons for {request.forecast_horizon}-hour horizon "
+                f"(pulper max speed: 120%)"
             )
         
         # Solve

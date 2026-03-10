@@ -56,9 +56,7 @@ def cli():
               help='Current inventory level (hours)')
 @click.option('--current-load', type=click.FloatRange(15.6, 28.2), default=22.8, show_default=True,
               help='Current load (MW) - affects ramp rate constraint')
-@click.option('--production-today', type=click.FloatRange(min=0.0), default=0.0, show_default=True,
-              help='Production so far today (tons)')
-@click.option('--current-pulper-speed', type=click.Choice(['60', '100', '120']), default='100', show_default=True,
+@click.option('--current-pulper-speed', type=click.Choice(['0', '60', '100', '120']), default='100', show_default=True,
               help='Current pulper speed')
 @click.option('--forecast-horizon', type=click.IntRange(1, 168), default=48, show_default=True,
               help='Forecast horizon (hours)')
@@ -69,8 +67,8 @@ def cli():
               help='Minimum inventory level (hours) - safety buffer')
 @click.option('--max-inventory', type=click.FloatRange(2.0, 10.0), default=8.0, show_default=True,
               help='Maximum inventory level (hours) - tank capacity')
-@click.option('--production-target', type=click.FloatRange(0.0, 600.0), default=500.0, show_default=True,
-              help='Daily production target (tons) - affects minimum pulper speed')
+@click.option('--production-target', type=click.FloatRange(0.0), default=250.0, show_default=True,
+              help='Total production target for forecast period (tons) - not per day')
 @click.option('--ramp-rate', type=click.FloatRange(min=0.1), default=0.5, show_default=True,
               help='Maximum load change rate (MW/min) - grid stability')
 @click.option('--wastewater-frequency', type=click.IntRange(min=1), default=4, show_default=True,
@@ -80,7 +78,7 @@ def cli():
 @click.option('--ai-insights', is_flag=True, default=False,
               help='Generate AI-powered insights using Claude (requires ANTHROPIC_API_KEY)')
 def optimize(location, forecast_start, current_inventory, current_load,
-             production_today, current_pulper_speed, forecast_horizon, output,
+             current_pulper_speed, forecast_horizon, output,
              min_inventory, max_inventory, production_target,
              ramp_rate, wastewater_frequency, min_compressors,
              ai_insights):
@@ -96,7 +94,7 @@ def optimize(location, forecast_start, current_inventory, current_load,
     # Display all inputs
     _display_inputs_and_config(
         location, forecast_start, forecast_horizon,
-        current_inventory, current_load, production_today, current_pulper_speed,
+        current_inventory, current_load, current_pulper_speed,
         min_inventory, max_inventory, production_target,
         ramp_rate, wastewater_frequency, min_compressors
     )
@@ -131,7 +129,7 @@ def optimize(location, forecast_start, current_inventory, current_load,
         timestamp=forecast_start,
         inventory_level=current_inventory,
         current_load=current_load,
-        production_today=production_today,
+        production_today=0.0,  # Not used anymore
         current_pulper_speed=current_pulper_speed
     )
     
@@ -197,9 +195,12 @@ def optimize(location, forecast_start, current_inventory, current_load,
 
 
 def _display_inputs_and_config(location, forecast_start, horizon, inventory, current_load,
-                               production_today, current_pulper_speed,
+                               current_pulper_speed,
                                min_inv, max_inv, prod_target, ramp_rate, ww_freq, min_comp):
     """Display optimization inputs and configuration side-by-side."""
+    
+    # Calculate production bounds
+    max_production = horizon * 2 * 120 * 0.25  # periods * max_speed * tons_per_period
     
     # Inputs table
     inputs_table = Table(show_header=False, box=box.SIMPLE, padding=(0, 1))
@@ -212,7 +213,6 @@ def _display_inputs_and_config(location, forecast_start, horizon, inventory, cur
     inputs_table.add_row("Context Days", "60 days")
     inputs_table.add_row("Current Inventory", f"{inventory} hours")
     inputs_table.add_row("Current Load", f"{current_load} MW")
-    inputs_table.add_row("Production Today", f"{production_today} tons")
     inputs_table.add_row("Current Pulper Speed", f"{current_pulper_speed}%")
     
     inputs_panel = Panel(
@@ -228,12 +228,13 @@ def _display_inputs_and_config(location, forecast_start, horizon, inventory, cur
     config_table.add_column("Value", style="white", justify="right")
     
     config_table.add_row("Inventory Range", f"{min_inv}-{max_inv}h")
-    config_table.add_row("Production Target", f"{prod_target} tons/day")
+    config_table.add_row("Production Target", f"{prod_target} tons")
+    config_table.add_row("Production Bounds", f"0-{max_production:.0f} tons")
     config_table.add_row("Ramp Rate Limit", f"{ramp_rate} MW/min")
     config_table.add_row("Wastewater Freq", f"Every {ww_freq}h")
     config_table.add_row("Min Compressors", f"{min_comp}")
     config_table.add_row("Load Range", "15.6-28.2 MW")
-    config_table.add_row("Pulper Speeds", "60%, 100%, 120%")
+    config_table.add_row("Pulper Speeds", "0%, 60%, 100%, 120%")
     
     config_panel = Panel(
         config_table,
