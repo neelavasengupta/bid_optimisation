@@ -96,8 +96,8 @@ class LoadOptimizer(BaseModel):
         
         pulper_power = pl.LpVariable.dicts("pulper_power", T, lowBound=0)
         
-        # Total load
-        load = pl.LpVariable.dicts("load", T, lowBound=self.min_load, upBound=self.max_load)
+        # Total load (no artificial bounds - determined by equipment states)
+        load = pl.LpVariable.dicts("load", T, lowBound=0)
         
         # Inventory level
         inventory = pl.LpVariable.dicts(
