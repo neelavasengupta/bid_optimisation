@@ -8,15 +8,19 @@ Given forecasted electricity prices for the next 48 hours, determine the optimal
 
 ## Objective Function
 
-**Minimize:** Total electricity cost over forecast horizon T
+**Minimize:** Total electricity cost + production deviation penalties
 
 ```
-minimize: Σ(t=0 to T) [ P(t) × L(t) × Δt ]
+minimize: Σ(t=0 to T) [ P(t) × L(t) × Δt ] + α × Q⁺ + β × Q⁻
 
 where:
   P(t) = electricity price at time t ($/MWh)
   L(t) = mill load at time t (MW)
   Δt = time period duration (0.5 hours)
+  Q⁺ = overproduction (tons above target)
+  Q⁻ = underproduction (tons below target)
+  α = 100 $/ton (overproduction penalty)
+  β = 200 $/ton (underproduction penalty)
 ```
 
 ---
@@ -25,24 +29,33 @@ where:
 
 For each time period t:
 
-### 1. Pulper Speed
+### 1. Paper Machine State
 ```
-s(t) ∈ {60%, 100%, 120%}
+pm(t) ∈ {0, 1}
+```
+- Binary variable: 1 = ON (12.0 MW), 0 = OFF
+- Controls both power consumption and pulp consumption
+- When OFF: No pulp consumption, allowing inventory buildup
+
+### 2. Pulper Speed
+```
+s(t) ∈ {0%, 60%, 100%, 120%}
 ```
 - Determines pulper power consumption via cubic law
 - Power = 6.0 × (s(t)/100)³ MW
-  - At 60%: 6.0 × 0.6³ = 1.3 MW
+  - At 0%: 0 MW (OFF)
+  - At 60%: 6.0 × 0.6³ = 1.296 MW
   - At 100%: 6.0 × 1.0³ = 6.0 MW
-  - At 120%: 6.0 × 1.2³ = 10.4 MW
+  - At 120%: 6.0 × 1.2³ = 10.368 MW
 
-### 2. Compressor States
+### 3. Compressor States
 ```
 c₁(t), c₂(t), c₃(t) ∈ {0, 1}
 ```
 - Binary variables: 1 = ON (1 MW each), 0 = OFF
 - Each compressor consumes 1.0 MW when ON
 
-### 3. Wastewater Pump
+### 4. Wastewater Pump
 ```
 w(t) ∈ {0, 1}
 ```
@@ -51,14 +64,14 @@ w(t) ∈ {0, 1}
 
 ### Total Load Calculation
 ```
-L(t) = 12.0                           (paper machines - constant)
+L(t) = 12.0 × pm(t)                   (paper machines - controllable)
      + 1.3                            (critical systems - constant)
      + 6.0 × (s(t)/100)³              (pulper - cubic law)
      + 1.0 × (c₁(t) + c₂(t) + c₃(t)) (compressors)
      + 1.5 × w(t)                     (wastewater)
 ```
 
-**Load Range:** 15.6 MW (minimum) to 28.2 MW (maximum)
+**Load Range:** 1.3 MW (minimum - all OFF) to 28.2 MW (maximum - all ON)
 
 ---
 
@@ -75,17 +88,22 @@ I(t+1) = I(t) + [Pulp_Production(t) - Pulp_Consumption(t)] × Δt
 
 where:
   Pulp_Production(t) = 5.0 × (s(t)/100) MW equivalent
+    - At 0% speed: 0 MW equivalent (OFF)
     - At 60% speed: 3.0 MW equivalent
     - At 100% speed: 5.0 MW equivalent
     - At 120% speed: 6.0 MW equivalent
   
-  Pulp_Consumption(t) = 5.0 MW (constant - paper machines)
+  Pulp_Consumption(t) = 5.0 × pm(t) MW equivalent
+    - When paper machines ON: 5.0 MW equivalent
+    - When paper machines OFF: 0 MW equivalent
 ```
 
 **Inventory Change Examples:**
-- HIGH mode (120% speed): +1.0 MW → +0.5 hours per period
-- NORMAL mode (100% speed): 0 MW → 0 hours per period (balanced)
-- CONSERVATION mode (60% speed): -2.0 MW → -1.0 hours per period
+- Paper machines OFF, pulper at 100%: +5.0 MW → +2.5 hours per period
+- Paper machines ON, pulper at 120%: +1.0 MW → +0.5 hours per period
+- Paper machines ON, pulper at 100%: 0 MW → 0 hours per period (balanced)
+- Paper machines ON, pulper at 60%: -2.0 MW → -1.0 hours per period
+- Paper machines ON, pulper OFF: -5.0 MW → -2.5 hours per period
 
 ---
 
@@ -93,16 +111,7 @@ where:
 
 All constraints are **configurable** via CLI options to demonstrate how different assumptions affect optimization.
 
-### 1. Load Bounds
-```
-min_load ≤ L(t) ≤ max_load  MW    ∀t
-```
-- **Default:** 15.6 ≤ L(t) ≤ 28.2 MW
-- **Configurable:** `--min-load`, `--max-load`
-- Minimum: Paper machines + critical + minimum pulper + min compressors
-- Maximum: All equipment at maximum capacity
-
-### 2. Inventory Bounds
+### 1. Inventory Bounds
 ```
 min_inventory ≤ I(t) ≤ max_inventory  hours    ∀t
 ```
@@ -111,7 +120,7 @@ min_inventory ≤ I(t) ≤ max_inventory  hours    ∀t
 - Minimum: Safety buffer (prevent paper machine starvation)
 - Maximum: Tank capacity (physical limit)
 
-### 3. Ramp Rate Limit
+### 2. Ramp Rate Limit
 ```
 |L(t) - L(t-1)| ≤ ramp_rate × 30  MW    ∀t
 ```
@@ -119,16 +128,23 @@ min_inventory ≤ I(t) ≤ max_inventory  hours    ∀t
 - **Configurable:** `--ramp-rate` (MW/min)
 - Protects equipment and grid stability
 
-### 4. Daily Production Target
+### 3. Production Target (Soft Constraint)
 ```
-Average pulper speed ≥ (production_target / 500) × 100%
-```
-- **Default:** 500 tons/day (requires 100% average speed)
-- **Configurable:** `--production-target` (tons/day)
-- Ensures customer orders are fulfilled
-- Lower target = more flexibility = higher savings
+Total_Production = Σ(t=0 to T) [s(t) × production_factor]
+Overproduction = max(0, Total_Production - production_target)
+Underproduction = max(0, production_target - Total_Production)
 
-### 5. Equipment Logic Constraints
+Objective includes penalties:
+  + 100 $/ton × Overproduction
+  + 200 $/ton × Underproduction
+```
+- **Default:** 250 tons for 48-hour horizon
+- **Configurable:** `--production-target` (tons for forecast period)
+- Soft constraint allows flexibility when inventory constraints conflict
+- Higher penalty for underproduction encourages meeting target
+- Optimizer balances production penalties against electricity costs
+
+### 4. Equipment Logic Constraints
 
 **Compressors - Minimum Coverage:**
 ```
@@ -146,28 +162,6 @@ c₁(t) + c₂(t) + c₃(t) ≥ min_compressors    ∀t
 - **Configurable:** `--wastewater-frequency` (hours)
 - Environmental compliance requirement
 - Can be deferred during expensive periods
-
-**Pulper Speed Options:**
-```
-s(t) ∈ allowed_speeds
-```
-- **Default:** {60%, 100%, 120%} (all speeds allowed)
-- **Configurable:** 
-  - `--allow-pulper-60` (enable/disable 60% speed)
-  - `--allow-pulper-120` (enable/disable 120% speed)
-- More speed options = more flexibility = higher savings
-
-### 6. Paper Machines (Hard Constraint)
-```
-Paper_Machine_Speed(t) = 100%    ∀t
-Paper_Machine_Power(t) = 12.0 MW    ∀t
-```
-- **NEVER adjusted** - quality and safety requirement
-- Constant speed ensures consistent paper properties:
-  - Moisture content
-  - Thickness uniformity
-  - Tensile strength
-- Any speed variation ruins product quality
 
 ---
 
@@ -193,8 +187,6 @@ timestamp,mean,p10,p90
 ### 2. Initial State
 ```
 I(0) = current inventory level (hours)
-L(-1) = current load (MW) - for ramp rate constraint
-production_today = tons produced so far today
 ```
 
 **Example:**
@@ -202,26 +194,16 @@ production_today = tons produced so far today
 {
   "timestamp": "2026-03-09 14:30:00",
   "inventory_level": 5.2,
-  "current_load": 22.8,
   "production_today": 300.5,
   "current_mode": "NORMAL"
 }
 ```
 
-### 3. Mill Configuration
-```
-Equipment specifications:
-  - Paper machines: 12.0 MW (constant)
-  - Critical systems: 1.3 MW (constant)
-  - Pulper base: 6.0 MW at 100% speed
-  - Compressor unit: 1.0 MW each
-  - Wastewater: 1.5 MW
+**Note**: Initial load for ramp rate constraint is set to a reasonable default (20 MW) internally.
 
-Operating constraints:
-  - Storage: 2.0 - 8.0 hours
-  - Ramp rate: 0.5 MW/min
-  - Production target: 500 tons/day
-```
+### 3. Mill Configuration
+
+See Decision Variables and Constraints sections for equipment specifications and operating constraints.
 
 ### 4. Location
 ```
@@ -241,7 +223,8 @@ For each time period t (96 periods for 48 hours):
 ```json
 {
   "timestamp": "2026-03-09 00:00:00",
-  "pulper_speed": 120,              // % (60, 100, or 120)
+  "paper_machines": true,           // ON/OFF
+  "pulper_speed": 120,              // % (0, 60, 100, or 120)
   "compressor_1": true,             // ON/OFF
   "compressor_2": true,             // ON/OFF
   "compressor_3": true,             // ON/OFF
@@ -250,7 +233,7 @@ For each time period t (96 periods for 48 hours):
   "expected_inventory": 5.5,        // hours
   "price": 124.50,                  // $/MWh
   "period_cost": 1755.90,           // $ (28.2 MW × 0.5h × $124.50)
-  "mode": "HIGH"                    // HIGH/NORMAL/CONSERVATION
+  "mode": "HIGH"                    // HIGH/NORMAL/CONSERVATION/OFF
 }
 ```
 
@@ -285,9 +268,10 @@ For each time period t (96 periods for 48 hours):
     },
     
     "mode_distribution": {
-      "HIGH": 12,                   // periods (6 hours)
-      "NORMAL": 72,                 // periods (36 hours)
-      "CONSERVATION": 12            // periods (6 hours)
+      "OFF": 44,                    // periods (22 hours)
+      "CONSERVATION": 8,            // periods (4 hours)
+      "NORMAL": 32,                 // periods (16 hours)
+      "HIGH": 12                    // periods (6 hours)
     }
   }
 }
@@ -315,25 +299,26 @@ For plotting and analysis:
 - Discrete variables: Equipment states (binary)
 
 **Integer:**
-- Binary variables: c₁(t), c₂(t), c₃(t), w(t) ∈ {0, 1}
-- Discrete choice: s(t) ∈ {60, 100, 120}
+- Binary variables: pm(t), c₁(t), c₂(t), c₃(t), w(t) ∈ {0, 1}
+- Discrete choice: s(t) ∈ {0, 60, 100, 120}
 
 **Linear:**
-- Objective function: Linear in L(t)
+- Objective function: Linear in L(t) plus linear penalties
 - Most constraints: Linear inequalities
 
 **Non-linear Element:**
 - Cubic law for pulper: Power = 6.0 × (s(t)/100)³
-- But only 3 discrete values, so can be linearized
+- But only 4 discrete values, so can be linearized
 
 ### Complexity
 
 **Problem Size:**
 - Time periods: 96 (48 hours × 2 periods/hour)
-- Decision variables per period: 5 (pulper + 3 compressors + wastewater)
-- Total decision variables: 480
-- Constraints per period: ~8
-- Total constraints: ~768
+- Decision variables per period: 6 (paper machines + pulper + 3 compressors + wastewater)
+- Binary indicators for pulper speed: 4 per period (0%, 60%, 100%, 120%)
+- Total decision variables: ~960
+- Constraints per period: ~10
+- Total constraints: ~960
 
 **Solvability:**
 - Small enough for exact solution (< 1 second with modern solvers)
@@ -344,60 +329,39 @@ For plotting and analysis:
 
 ## Solution Approach
 
-### Implementation: Full MILP Optimization
-
-The system uses **Approach 2 (Full MILP)** with PuLP solver for optimal equipment scheduling.
+The system uses full MILP optimization with PuLP solver and CBC (Coin-or Branch and Cut).
 
 **Why MILP:**
-- Proven optimal solution (not heuristic)
+- Proven optimal solution
 - Handles complex constraints naturally
-- Fast solve time (< 0.1 seconds for 48-hour horizon)
-- Flexible - easy to add new constraints
-- Configurable - all constraints can be adjusted via CLI
-
-**Solver:** PuLP with CBC (Coin-or Branch and Cut)
-- Open source, no licensing costs
-- Branch & Bound algorithm
-- Guarantees optimal solution
-- Handles up to 500 variables efficiently
-
-**Decision Variables per Period:**
-- Pulper speed: s(t) ∈ {60, 100, 120} (linearized with binary indicators)
-- Compressor states: c₁(t), c₂(t), c₃(t) ∈ {0, 1}
-- Wastewater pump: w(t) ∈ {0, 1}
-- Total: 8 variables per period (3 speed indicators + 4 equipment states + 1 load)
+- Fast solve time (< 0.15 seconds for 48-hour horizon)
+- Flexible and configurable
 
 **Linearization of Cubic Law:**
-Since pulper speed has only 3 discrete values, the cubic relationship is linearized:
+Since pulper speed has only 4 discrete values, the cubic relationship is linearized using binary indicators:
 ```
-s(t) = 60 × s₆₀(t) + 100 × s₁₀₀(t) + 120 × s₁₂₀(t)
-s₆₀(t) + s₁₀₀(t) + s₁₂₀(t) = 1
-Power(t) = 1.296 × s₆₀(t) + 6.0 × s₁₀₀(t) + 10.368 × s₁₂₀(t)
+s(t) = 0 × s₀(t) + 60 × s₆₀(t) + 100 × s₁₀₀(t) + 120 × s₁₂₀(t)
+s₀(t) + s₆₀(t) + s₁₀₀(t) + s₁₂₀(t) = 1
+Power(t) = 0 × s₀(t) + 1.296 × s₆₀(t) + 6.0 × s₁₀₀(t) + 10.368 × s₁₂₀(t)
 ```
-
-**Advantages of This Approach:**
-- Optimal solution (5-10% better than simple rules)
-- Configurable constraints for scenario analysis
-- Fast enough for real-time use
-- Handles all equipment interactions
-- Respects all physical and operational constraints
 
 **Performance:**
-- Solve time: 0.05-0.10 seconds (48-hour horizon)
-- Typical savings: 10-12% vs constant load
+- Solve time: 0.05-0.15 seconds (48-hour horizon)
+- Typical savings: 50-85% vs constant load
 - Scales to 168-hour horizon if needed
 
 ---
 
 ## Next Steps
 
-1. ✅ **Validate assumptions** - Mill configuration confirmed
-2. ✅ **Choose approach** - Full MILP implemented with PuLP
-3. ✅ **Implement optimizer** - Core optimization logic complete
-4. ✅ **Integrate with forecasting** - Price prediction engine integrated
-5. ✅ **Create configurable system** - All constraints adjustable via CLI
-6. **Test scenarios** - Validate on different constraint combinations
-7. **Deploy** - Integrate with real-time mill control system
+1. ✅ Validate assumptions - Mill configuration confirmed
+2. ✅ Choose approach - Full MILP implemented with PuLP
+3. ✅ Implement optimizer - Core optimization logic complete
+4. ✅ Integrate with forecasting - Price prediction engine integrated
+5. ✅ Create configurable system - All constraints adjustable via CLI
+6. ✅ Add paper machine control - Paper machines now controllable (ON/OFF)
+7. Test scenarios - Validate on different constraint combinations
+8. Deploy - Integrate with real-time mill control system
 
 ## Usage
 
