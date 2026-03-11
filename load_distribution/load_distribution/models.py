@@ -10,16 +10,16 @@ class MillState(BaseModel):
     model_config = ConfigDict(frozen=True)
     
     timestamp: datetime
-    inventory_level: float = Field(ge=2.0, le=8.0, description="Hours of pulp in storage")
-    current_load: float = Field(ge=15.6, le=28.2, description="Current power consumption (MW)")
+    inventory_level: float = Field(ge=2.0, le=20.0, description="Hours of pulp in storage")
+    current_load: float = Field(ge=1.3, le=28.2, description="Current power consumption (MW) - for ramp rate constraint")
     production_today: float = Field(ge=0, description="Tons produced so far today")
     current_pulper_speed: int = Field(description="Current pulper speed (%)")
     
     @field_validator('current_pulper_speed')
     @classmethod
     def validate_pulper_speed(cls, v):
-        if v not in [60, 100, 120]:
-            raise ValueError(f"Pulper speed must be 60, 100, or 120, got {v}")
+        if v not in [0, 60, 100, 120]:
+            raise ValueError(f"Pulper speed must be 0, 60, 100, or 120, got {v}")
         return v
 
 
@@ -42,20 +42,24 @@ class EquipmentSettings(BaseModel):
     compressor_2: bool = Field(description="Compressor 2 state")
     compressor_3: bool = Field(description="Compressor 3 state")
     wastewater_pump: bool = Field(description="Wastewater pump state")
+    paper_machines: bool = Field(description="Paper machines state (ON/OFF)")
     
     @field_validator('pulper_speed')
     @classmethod
     def validate_pulper_speed(cls, v):
-        if v not in [60, 100, 120]:
-            raise ValueError(f"Pulper speed must be 60, 100, or 120, got {v}")
+        if v not in [0, 60, 100, 120]:
+            raise ValueError(f"Pulper speed must be 0, 60, 100, or 120, got {v}")
         return v
     
     def total_load(self) -> float:
         """Calculate total mill load for these settings."""
         from .config import MILL_CONFIG
         
-        # Paper machines + critical (constant)
-        load = MILL_CONFIG["paper_machines"] + MILL_CONFIG["critical_systems"]
+        # Paper machines (now controllable)
+        load = MILL_CONFIG["paper_machines"] if self.paper_machines else 0.0
+        
+        # Critical systems (always on)
+        load += MILL_CONFIG["critical_systems"]
         
         # Pulper (cubic law)
         load += MILL_CONFIG["pulper_base"] * (self.pulper_speed / 100) ** 3
@@ -72,6 +76,11 @@ class EquipmentSettings(BaseModel):
         """Calculate pulp production rate (MW equivalent)."""
         from .config import MILL_CONFIG
         return MILL_CONFIG["pulp_consumption_rate"] * (self.pulper_speed / 100)
+    
+    def pulp_consumption_rate(self) -> float:
+        """Calculate pulp consumption rate (MW equivalent)."""
+        from .config import MILL_CONFIG
+        return MILL_CONFIG["pulp_consumption_rate"] if self.paper_machines else 0.0
 
 
 class SchedulePeriod(BaseModel):
@@ -91,8 +100,15 @@ class OptimizationResult(BaseModel):
     model_config = ConfigDict(frozen=True)
     
     schedule: List[SchedulePeriod]
+    baseline_schedule_sample: List[dict] = Field(description="Baseline schedule sample (first 12 periods)")
     total_cost: float = Field(description="Total cost ($)")
     baseline_cost: float = Field(description="Baseline cost at constant load ($)")
+    baseline_avg_load: float = Field(description="Baseline average load (MW)")
+    baseline_min_load: float = Field(description="Baseline minimum load (MW)")
+    baseline_max_load: float = Field(description="Baseline maximum load (MW)")
+    baseline_avg_inventory: float = Field(description="Baseline average inventory (hours)")
+    baseline_min_inventory: float = Field(description="Baseline minimum inventory (hours)")
+    baseline_max_inventory: float = Field(description="Baseline maximum inventory (hours)")
     savings: float = Field(description="Cost savings ($)")
     savings_percent: float = Field(description="Savings percentage")
     

@@ -50,27 +50,21 @@ def cli():
 @click.option('--location', type=str, required=True,
               help='Location ID (e.g., HAY2201)')
 @click.option('--forecast-start', type=click.DateTime(formats=['%Y-%m-%d %H:%M', '%Y-%m-%d']),
-              default='2024-03-07 00:00', show_default=True,
+              required=True,
               help='Forecast start date and time (YYYY-MM-DD HH:MM or YYYY-MM-DD)')
-@click.option('--current-inventory', type=click.FloatRange(2.0, 8.0), default=5.0, show_default=True,
+@click.option('--current-inventory', type=click.FloatRange(2.0, 20.0), default=5.0, show_default=True,
               help='Current inventory level (hours)')
-@click.option('--current-load', type=click.FloatRange(15.6, 28.2), default=22.8, show_default=True,
-              help='Current load (MW) - affects ramp rate constraint')
-@click.option('--production-today', type=click.FloatRange(min=0.0), default=0.0, show_default=True,
-              help='Production so far today (tons)')
-@click.option('--current-pulper-speed', type=click.Choice(['60', '100', '120']), default='100', show_default=True,
-              help='Current pulper speed')
 @click.option('--forecast-horizon', type=click.IntRange(1, 168), default=48, show_default=True,
               help='Forecast horizon (hours)')
 @click.option('--output', type=click.Path(dir_okay=False, writable=True), default=None,
               help='Output CSV file path (optional)')
 # Configurable constraints
-@click.option('--min-inventory', type=click.FloatRange(0.0, 8.0), default=2.0, show_default=True,
+@click.option('--min-inventory', type=click.FloatRange(0.0, 10.0), default=2.0, show_default=True,
               help='Minimum inventory level (hours) - safety buffer')
-@click.option('--max-inventory', type=click.FloatRange(2.0, 10.0), default=8.0, show_default=True,
+@click.option('--max-inventory', type=click.FloatRange(2.0, 20.0), default=12.0, show_default=True,
               help='Maximum inventory level (hours) - tank capacity')
-@click.option('--production-target', type=click.FloatRange(0.0, 600.0), default=500.0, show_default=True,
-              help='Daily production target (tons) - affects minimum pulper speed')
+@click.option('--production-target', type=click.FloatRange(0.0), required=True,
+              help='Total production target for forecast period (tons) - not per day')
 @click.option('--ramp-rate', type=click.FloatRange(min=0.1), default=0.5, show_default=True,
               help='Maximum load change rate (MW/min) - grid stability')
 @click.option('--wastewater-frequency', type=click.IntRange(min=1), default=4, show_default=True,
@@ -79,8 +73,8 @@ def cli():
               help='Minimum compressors that must be ON - process requirements')
 @click.option('--ai-insights', is_flag=True, default=False,
               help='Generate AI-powered insights using Claude (requires ANTHROPIC_API_KEY)')
-def optimize(location, forecast_start, current_inventory, current_load,
-             production_today, current_pulper_speed, forecast_horizon, output,
+def optimize(location, forecast_start, current_inventory,
+             forecast_horizon, output,
              min_inventory, max_inventory, production_target,
              ramp_rate, wastewater_frequency, min_compressors,
              ai_insights):
@@ -90,13 +84,15 @@ def optimize(location, forecast_start, current_inventory, current_load,
     console.print(Rule("[bold cyan]Paper Mill Load Optimization[/bold cyan]", style="cyan"))
     console.print()
     
-    # Convert string to int for pulper speed
-    current_pulper_speed = int(current_pulper_speed)
+    # Use a reasonable default for initial load (typical operation)
+    # This only affects the first period's ramp rate constraint
+    from .config import MILL_CONFIG
+    current_load = MILL_CONFIG["default_initial_load"]
     
     # Display all inputs
     _display_inputs_and_config(
         location, forecast_start, forecast_horizon,
-        current_inventory, current_load, production_today, current_pulper_speed,
+        current_inventory, current_load,
         min_inventory, max_inventory, production_target,
         ramp_rate, wastewater_frequency, min_compressors
     )
@@ -131,8 +127,8 @@ def optimize(location, forecast_start, current_inventory, current_load,
         timestamp=forecast_start,
         inventory_level=current_inventory,
         current_load=current_load,
-        production_today=production_today,
-        current_pulper_speed=current_pulper_speed
+        production_today=0.0,  # Not used anymore
+        current_pulper_speed=100  # Default, not used in optimization
     )
     
     # Create price forecast
@@ -197,9 +193,11 @@ def optimize(location, forecast_start, current_inventory, current_load,
 
 
 def _display_inputs_and_config(location, forecast_start, horizon, inventory, current_load,
-                               production_today, current_pulper_speed,
                                min_inv, max_inv, prod_target, ramp_rate, ww_freq, min_comp):
     """Display optimization inputs and configuration side-by-side."""
+    
+    # Calculate production bounds
+    max_production = horizon * 2 * 120 * 0.25  # periods * max_speed * tons_per_period
     
     # Inputs table
     inputs_table = Table(show_header=False, box=box.SIMPLE, padding=(0, 1))
@@ -212,8 +210,6 @@ def _display_inputs_and_config(location, forecast_start, horizon, inventory, cur
     inputs_table.add_row("Context Days", "60 days")
     inputs_table.add_row("Current Inventory", f"{inventory} hours")
     inputs_table.add_row("Current Load", f"{current_load} MW")
-    inputs_table.add_row("Production Today", f"{production_today} tons")
-    inputs_table.add_row("Current Pulper Speed", f"{current_pulper_speed}%")
     
     inputs_panel = Panel(
         inputs_table,
@@ -228,12 +224,12 @@ def _display_inputs_and_config(location, forecast_start, horizon, inventory, cur
     config_table.add_column("Value", style="white", justify="right")
     
     config_table.add_row("Inventory Range", f"{min_inv}-{max_inv}h")
-    config_table.add_row("Production Target", f"{prod_target} tons/day")
+    config_table.add_row("Production Target", f"{prod_target} tons")
+    config_table.add_row("Production Bounds", f"0-{max_production:.0f} tons")
     config_table.add_row("Ramp Rate Limit", f"{ramp_rate} MW/min")
     config_table.add_row("Wastewater Freq", f"Every {ww_freq}h")
     config_table.add_row("Min Compressors", f"{min_comp}")
-    config_table.add_row("Load Range", "15.6-28.2 MW")
-    config_table.add_row("Pulper Speeds", "60%, 100%, 120%")
+    config_table.add_row("Pulper Speeds", "0%, 60%, 100%, 120%")
     
     config_panel = Panel(
         config_table,
@@ -256,40 +252,63 @@ def _display_summary(result):
     console.print(Rule("[bold green]✓ Optimization Complete[/bold green]", style="green"))
     console.print()
     
-    # Results in a prominent panel
-    savings_text = f"[green]${result.savings:,.2f} ({result.savings_percent:.1f}%)[/green]" if result.savings > 0 else f"[red]${result.savings:,.2f} ({result.savings_percent:.1f}%)[/red]"
-    console.print(Panel(
-        f"[white]Total Cost:[/white] [bold]${result.total_cost:,.2f}[/bold]\n"
-        f"[white]Baseline Cost:[/white] ${result.baseline_cost:,.2f}\n"
-        f"[white]Savings:[/white] [bold]{savings_text}[/bold]\n\n"
-        f"[dim]Solve Time: {result.solve_time:.2f}s | Status: {result.solver_status}[/dim]",
-        title="[bold green]💰 Financial Results[/bold green]",
-        border_style="green",
-        box=box.DOUBLE,
-        padding=(1, 2)
-    ))
-    
-    # Metrics table - characteristics of the solution
-    table = Table(show_header=True, box=box.ROUNDED, title="[bold]📈 Solution Metrics[/bold]")
+    # Combined metrics table - financial and operational
+    table = Table(show_header=True, box=box.ROUNDED, title="[bold]📊 Results Comparison[/bold]")
     table.add_column("Metric", style="cyan")
-    table.add_column("Value", style="white", justify="right")
-    table.add_column("Description", style="dim")
+    table.add_column("Baseline", style="dim", justify="right")
+    table.add_column("Proposed", style="white", justify="right")
+    table.add_column("Improvement", style="green", justify="right")
     
-    table.add_row("Average Load", f"{result.avg_load:.1f} MW", 
-                  "Mean power consumption")
-    table.add_row("Load Range", f"{result.min_load:.1f} - {result.max_load:.1f} MW",
-                  "Min/max power used")
-    table.add_row("Average Inventory", f"{result.avg_inventory:.1f} hours",
-                  "Mean pulp storage level")
-    table.add_row("Inventory Range", f"{result.min_inventory:.1f} - {result.max_inventory:.1f} hours",
-                  "Min/max storage used")
-    table.add_row("Total Production", f"{result.total_production:.1f} tons",
-                  "Paper produced")
-    table.add_row("Production Target", f"{result.production_target:.1f} tons",
-                  "Required production")
+    # Financial metrics
+    savings_pct = result.savings_percent
+    table.add_row(
+        "Total Cost",
+        f"${result.baseline_cost:,.2f}",
+        f"${result.total_cost:,.2f}",
+        f"-${result.savings:,.2f} ({savings_pct:.1f}%)"
+    )
     
-    console.print()
+    # Operational metrics
+    load_reduction = result.baseline_avg_load - result.avg_load
+    load_reduction_pct = (load_reduction / result.baseline_avg_load) * 100 if result.baseline_avg_load > 0 else 0
+    
+    table.add_row(
+        "Average Load", 
+        f"{result.baseline_avg_load:.1f} MW", 
+        f"{result.avg_load:.1f} MW", 
+        f"-{load_reduction:.1f} MW ({load_reduction_pct:.1f}%)"
+    )
+    table.add_row(
+        "Load Range", 
+        f"{result.baseline_min_load:.1f} - {result.baseline_max_load:.1f} MW",
+        f"{result.min_load:.1f} - {result.max_load:.1f} MW",
+        "—"
+    )
+    table.add_row(
+        "Average Inventory", 
+        f"{result.baseline_avg_inventory:.1f} hours",
+        f"{result.avg_inventory:.1f} hours",
+        "—"
+    )
+    table.add_row(
+        "Inventory Range", 
+        f"{result.baseline_min_inventory:.1f} - {result.baseline_max_inventory:.1f} hours",
+        f"{result.min_inventory:.1f} - {result.max_inventory:.1f} hours",
+        "—"
+    )
+    table.add_row(
+        "Total Production", 
+        f"{result.production_target:.1f} tons", 
+        f"{result.total_production:.1f} tons",
+        "—"
+    )
+    
     console.print(table)
+    console.print()
+    console.print(f"[dim]Solve Time: {result.solve_time:.2f}s | Status: {result.solver_status}[/dim]")
+    console.print()
+    console.print("[dim]Baseline: Run equipment from period 0 at typical settings (PM ON, pulper 100%, 2 compressors) until target met, then minimal load[/dim]")
+    console.print("[dim]Proposed: Price-aware optimization with strategic timing and equipment scheduling[/dim]")
 
 
 def _display_ai_insights(result, request: OptimizationRequest, optimizer_config: dict):
@@ -325,8 +344,7 @@ def _display_ai_insights(result, request: OptimizationRequest, optimizer_config:
             f"[bold]Initial Conditions:[/bold] {request.mill_state.inventory_level:.1f}h inventory, "
             f"{request.mill_state.current_load:.1f} MW load\n"
             f"[bold]Constraints:[/bold] Inventory {optimizer_config['min_inventory']:.1f}-{optimizer_config['max_inventory']:.1f}h, "
-            f"Load {MILL_CONFIG['min_load']:.1f}-{MILL_CONFIG['max_load']:.1f} MW, "
-            f"Production target {optimizer_config['production_target']:.0f} tons/day"
+            f"Production target {optimizer_config['production_target']:.0f} tons"
         )
         console.print(Panel(
             context_text,
@@ -419,7 +437,7 @@ def _prepare_optimization_context(
     
     # Equipment patterns
     pulper_speeds = [p.equipment.pulper_speed for p in schedule]
-    speed_counts = {s: pulper_speeds.count(s) for s in [60, 100, 120]}
+    speed_counts = {s: pulper_speeds.count(s) for s in MILL_CONFIG["pulper_speeds"]}
     
     # Build context
     context = f"""# OPTIMIZATION ANALYSIS
@@ -427,19 +445,25 @@ def _prepare_optimization_context(
 ## Setup
 Location: {request.location} | Start: {request.mill_state.timestamp.strftime('%Y-%m-%d %H:%M')} | Horizon: {request.forecast_horizon}h
 Initial: {request.mill_state.inventory_level:.1f}h inventory, {request.mill_state.current_load:.1f}MW load
-Constraints: Inventory {optimizer_config['min_inventory']:.1f}-{optimizer_config['max_inventory']:.1f}h, Load {MILL_CONFIG['min_load']:.1f}-{MILL_CONFIG['max_load']:.1f}MW, Target {optimizer_config['production_target']:.0f} tons/day
+Constraints: Inventory {optimizer_config['min_inventory']:.1f}-{optimizer_config['max_inventory']:.1f}h, Target {optimizer_config['production_target']:.0f} tons
 
 ## Results
 Cost: ${result.total_cost:,.2f} (baseline ${result.baseline_cost:,.2f}) → Savings: ${result.savings:,.2f} ({result.savings_percent:.1f}%)
-Load: {result.avg_load:.1f}MW avg ({result.min_load:.1f}-{result.max_load:.1f}MW)
+Load: {result.avg_load:.1f}MW avg ({result.min_load:.1f}-{result.max_load:.1f}MW) vs baseline {result.baseline_avg_load:.1f}MW avg
 Inventory: {result.avg_inventory:.1f}h avg ({result.min_inventory:.1f}-{result.max_inventory:.1f}h)
 Production: {result.total_production:.1f}/{result.production_target:.1f} tons
+
+## Baseline Strategy (for comparison)
+The baseline represents a naive operator strategy: run equipment from period 0 onwards at typical settings
+(PM ON, pulper 100%, 2 compressors) until production target is met, then switch to minimal load.
+This ignores price signals and just focuses on meeting production requirements.
+Baseline would cost ${result.baseline_cost:,.2f} with {result.baseline_avg_load:.1f}MW average load.
 
 ## Price Pattern
 Range: ${min_price:.2f}-${max_price:.2f}/MWh (avg ${avg_price:.2f}, spread ${max_price-min_price:.2f})
 
 ## Equipment Strategy
-Pulper: 60%={speed_counts[60]}p, 100%={speed_counts[100]}p, 120%={speed_counts[120]}p
+Pulper: 0%={speed_counts[0]}p, 60%={speed_counts[60]}p, 100%={speed_counts[100]}p, 120%={speed_counts[120]}p
 
 ## Schedule (first 24 periods)
 """
@@ -447,9 +471,10 @@ Pulper: 60%={speed_counts[60]}p, 100%={speed_counts[100]}p, 120%={speed_counts[1
     # Add schedule sample (first 24 periods = 12 hours)
     for i, p in enumerate(schedule[:24]):
         eq = p.equipment
+        pm = "ON " if eq.paper_machines else "OFF"
         comp = sum([eq.compressor_1, eq.compressor_2, eq.compressor_3])
         ww = "WW" if eq.wastewater_pump else "--"
-        context += f"\n{i:2d} {p.timestamp.strftime('%H:%M')} | P:{eq.pulper_speed:3d}% C:{comp} {ww} | {p.expected_load:4.1f}MW {p.expected_inventory:3.1f}h | ${p.price:5.2f}/MWh ${p.period_cost:6.2f}"
+        context += f"\n{i:2d} {p.timestamp.strftime('%H:%M')} | PM:{pm} P:{eq.pulper_speed:3d}% C:{comp} {ww} | {p.expected_load:4.1f}MW {p.expected_inventory:3.1f}h | ${p.price:5.2f}/MWh ${p.period_cost:6.2f}"
     
     context += f"\n... {len(schedule)-24} more periods\n"
     
@@ -457,40 +482,89 @@ Pulper: 60%={speed_counts[60]}p, 100%={speed_counts[100]}p, 120%={speed_counts[1
 
 
 def _display_schedule_sample(result):
-    """Display sample of optimized schedule."""
+    """Display sample of baseline and optimized schedules side by side."""
     console.print()
-    console.print(Rule("[bold cyan]📅 Recommended Schedule[/bold cyan]", style="cyan"))
+    console.print(Rule("[bold cyan]📅 Schedule Comparison[/bold cyan]", style="cyan"))
     console.print()
     console.print("[dim]First 12 periods (30-minute intervals)[/dim]\n")
     
-    table = Table(show_header=True, box=box.ROUNDED)
-    table.add_column("Time", style="cyan", width=16)
-    table.add_column("Pulper\n%", justify="right", style="yellow", width=8)
-    table.add_column("Comp.", justify="center", style="green", width=6)
-    table.add_column("WW", justify="center", style="blue", width=4)
-    table.add_column("Load\nMW", justify="right", style="white", width=8)
-    table.add_column("Inv.\nhrs", justify="right", style="magenta", width=8)
-    table.add_column("Price\n$/MWh", justify="right", style="yellow", width=10)
-    table.add_column("Cost\n$", justify="right", style="red", width=10)
+    from .config import MILL_CONFIG
+    period_duration = MILL_CONFIG["period_duration"]
+    tons_per_mwh = MILL_CONFIG["tons_per_mwh"]
+    
+    # Baseline schedule table
+    console.print("[bold dim]Baseline Schedule (naive: run from start)[/bold dim]")
+    baseline_table = Table(show_header=True, box=box.ROUNDED)
+    baseline_table.add_column("Time", style="cyan", width=8)
+    baseline_table.add_column("PM", justify="center", width=3)
+    baseline_table.add_column("Pulp", justify="right", width=4)
+    baseline_table.add_column("C", justify="center", width=2)
+    baseline_table.add_column("WW", justify="center", width=3)
+    baseline_table.add_column("Load", justify="right", width=5)
+    baseline_table.add_column("Inv", justify="right", width=4)
+    baseline_table.add_column("Prod", justify="right", width=5)
+    baseline_table.add_column("Price", justify="right", width=7)
+    baseline_table.add_column("Cost", justify="right", width=6)
+    
+    for b in result.baseline_schedule_sample:
+        # Calculate production for this period (pulper speed determines production)
+        production = (b['pulper'] / 100) * MILL_CONFIG["pulp_consumption_rate"] * period_duration * tons_per_mwh
+        
+        baseline_table.add_row(
+            result.schedule[b['period']].timestamp.strftime("%H:%M"),
+            b['pm'],
+            f"{b['pulper']}%",
+            f"{b['compressors']}",
+            b['wastewater'],
+            f"{b['load']:.1f}",
+            f"{b['inventory']:.1f}",
+            f"{production:.1f}t",
+            f"${b['price']:.2f}",
+            f"${b['cost']:.0f}"
+        )
+    
+    console.print(baseline_table)
+    console.print()
+    
+    # Proposed schedule table
+    console.print("[bold white]Proposed Schedule (price-aware optimization)[/bold white]")
+    proposed_table = Table(show_header=True, box=box.ROUNDED)
+    proposed_table.add_column("Time", style="cyan", width=8)
+    proposed_table.add_column("PM", justify="center", width=3)
+    proposed_table.add_column("Pulp", justify="right", width=4)
+    proposed_table.add_column("C", justify="center", width=2)
+    proposed_table.add_column("WW", justify="center", width=3)
+    proposed_table.add_column("Load", justify="right", width=5)
+    proposed_table.add_column("Inv", justify="right", width=4)
+    proposed_table.add_column("Prod", justify="right", width=5)
+    proposed_table.add_column("Price", justify="right", width=7)
+    proposed_table.add_column("Cost", justify="right", width=6)
     
     for period in result.schedule[:12]:
         eq = period.equipment
         compressors = sum([eq.compressor_1, eq.compressor_2, eq.compressor_3])
         ww = "ON" if eq.wastewater_pump else "OFF"
+        pm = "ON" if eq.paper_machines else "OFF"
         
-        table.add_row(
-            period.timestamp.strftime("%m/%d %I:%M %p"),
-            f"{eq.pulper_speed}",
-            f"{compressors}/3",
+        # Calculate production for this period
+        production = eq.pulp_production_rate() * period_duration * tons_per_mwh
+        
+        proposed_table.add_row(
+            period.timestamp.strftime("%H:%M"),
+            pm,
+            f"{eq.pulper_speed}%",
+            f"{compressors}",
             ww,
             f"{period.expected_load:.1f}",
             f"{period.expected_inventory:.1f}",
+            f"{production:.1f}t",
             f"${period.price:.2f}",
-            f"${period.period_cost:.2f}"
+            f"${period.period_cost:.0f}"
         )
     
-    console.print(table)
-    console.print(f"\n[dim]... {len(result.schedule) - 12} more periods[/dim]\n")
+    console.print(proposed_table)
+    console.print(f"\n[dim]... {len(result.schedule) - 12} more periods[/dim]")
+    console.print(f"[dim]Note: PM=Paper Machines (ON/OFF), Pulp=Pulper speed, Prod=Paper production (tons), Inv=Inventory buffer (hours)[/dim]\n")
 
 
 def _save_schedule(result, output_path: str):
@@ -500,6 +574,7 @@ def _save_schedule(result, output_path: str):
         eq = period.equipment
         data.append({
             'timestamp': period.timestamp,
+            'paper_machines': eq.paper_machines,
             'pulper_speed': eq.pulper_speed,
             'compressor_1': eq.compressor_1,
             'compressor_2': eq.compressor_2,
